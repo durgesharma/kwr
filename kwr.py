@@ -51,7 +51,7 @@ HELP_TEXT = """
   --mode deep_harvest   Full Deep Harvest (Runs all above modes)
 
   Example:
-    python kwr.py harvest "modular kitchen" --mode commercial --loc "Navi Mumbai, Thane"
+    python kwr.py harvest "marketing tools" --mode commercial
 
 [4] GOOGLE SHEETS SETUP (Optional):
   To automatically sync keywords to your own Google Sheet:

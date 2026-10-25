@@ -6,16 +6,20 @@ Can run standalone or be scheduled.
 import sys
 from engine import execute_harvest, load_all_keywords
 
-SEED_KEYWORDS = [
-    "modular kitchen Navi Mumbai",
-    "wardrobe contractor Navi Mumbai",
-    "full home renovation Navi Mumbai",
-    "carpenter Ghansoli",
-    "interior execution Thane"
+DEFAULT_SEEDS = [
+    "seo tools",
+    "cloud storage",
+    "digital marketing"
 ]
 
 def main():
-    seeds = sys.argv[1:] if len(sys.argv) > 1 else SEED_KEYWORDS
+    if len(sys.argv) > 1:
+        seeds = sys.argv[1:]
+    else:
+        print("[*] No seed keywords specified. Usage: python bot.py \"your keyword\"")
+        print("[*] Using default example seeds...")
+        seeds = DEFAULT_SEEDS
+
     print(f"[*] Starting Keyword Harvester on {len(seeds)} seed queries...")
     total_new = 0
 
@@ -28,7 +32,7 @@ def main():
         count = execute_harvest(
             seed=seed,
             mode="az_suffix",
-            locations=["Navi Mumbai"],
+            locations=None,
             progress_callback=on_progress
         )
         total_new += count

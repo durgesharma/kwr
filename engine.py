@@ -168,22 +168,18 @@ def classify_intent(keyword):
 
 
 def detect_cluster(keyword, seed):
-    """Assigns a topic cluster based on common interior and trade entities."""
+    """Assigns a topic cluster based on universal query patterns."""
     kw = keyword.lower()
-    if any(w in kw for w in ["price", "cost", "rate", "budget", "sq ft", "charges"]):
-        return "Pricing & Estimates"
-    if any(w in kw for w in ["material", "acrylic", "laminate", "plywood", "veneer", "mdf", "hdf", "glass"]):
-        return "Materials & Finishes"
-    if any(w in kw for w in ["l shaped", "u shaped", "straight", "parallel", "island", "layout", "design"]):
-        return "Layouts & Designs"
-    if any(w in kw for w in ["wardrobe", "cupboard", "closet", "sliding", "hinged"]):
-        return "Wardrobes & Storage"
-    if any(w in kw for w in ["kitchen", "modular kitchen", "trolley", "chimney", "countertop"]):
-        return "Modular Kitchens"
-    if any(w in kw for w in ["contractor", "carpenter", "interior designer", "agency", "execution", "renovation"]):
-        return "Contractors & Execution"
-    if any(w in kw for w in ["how to", "maintenance", "cleaning", "care", "problem", "waterproof"]):
-        return "Maintenance & Troubleshooting"
+    if any(w in kw for w in ["price", "cost", "rate", "rates", "budget", "pricing", "charges", "cheap", "expensive", "fee"]):
+        return "Pricing & Cost"
+    if any(w in kw for w in ["best", "top", "review", "reviews", "vs", "versus", "compare", "comparison", "alternative"]):
+        return "Reviews & Comparison"
+    if any(w in kw for w in ["how to", "guide", "tutorial", "tips", "diy", "process", "step by step", "ideas", "meaning"]):
+        return "Guides & How-To"
+    if any(w in kw for w in ["near me", "service", "company", "contractor", "agency", "provider", "shop", "store"]):
+        return "Services & Local"
+    if any(w in kw for w in ["tools", "software", "app", "online", "platform", "free"]):
+        return "Tools & Platforms"
     
     return seed.title() if seed else "General"
 

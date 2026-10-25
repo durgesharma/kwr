@@ -221,7 +221,8 @@ DASHBOARD_HTML = """
         /* Stats Strip */
         .stats-strip {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
+            max-width: 320px;
             gap: 8px;
             margin-bottom: 14px;
         }
@@ -524,14 +525,11 @@ DASHBOARD_HTML = """
         </div>
 
         <div class="topbar-right">
-            {% if is_saved_view %}
-                <a href="/" class="nav-tab"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> All Keywords ({{ all_total_count }})</a>
-                <span class="nav-tab saved-active"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Saved ({{ saved_count }})</span>
-            {% else %}
-                <span class="nav-tab active">All ({{ total_count }})</span>
-                <a href="/saved" class="nav-tab"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Saved ({{ saved_count }})</a>
-            {% endif %}
-            
+            <button type="button" class="nav-tab active" id="tabAll" onclick="setViewTab('all')">All (<span id="countAll">{{ all_total_count }}</span>)</button>
+            <button type="button" class="nav-tab" id="tabSaved" onclick="setViewTab('saved')">
+                <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Saved (<span id="countSaved">{{ saved_count }}</span>)
+            </button>
             <a href="/export" class="nav-tab" title="Download CSV"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
             <a href="/guide" target="_blank" class="nav-tab" title="How to use manual"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></a>
         </div>
@@ -545,66 +543,52 @@ DASHBOARD_HTML = """
         </div>
         <div class="stat-box">
             <div class="stat-lbl">Saved</div>
-            <div class="stat-num" style="color: var(--star);">{{ saved_count }}</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-lbl">Transactional</div>
-            <div class="stat-num" style="color: var(--pill-tx-text);">{{ tx_count }}</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-lbl">Commercial</div>
-            <div class="stat-num" style="color: var(--pill-comm-text);">{{ comm_count }}</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-lbl">Informational</div>
-            <div class="stat-num" style="color: var(--pill-info-text);">{{ info_count }}</div>
+            <div class="stat-num" style="color: var(--star);" id="statSaved">{{ saved_count }}</div>
         </div>
     </div>
 
-    {% if not is_saved_view %}
     <!-- HARVESTER PANEL -->
     <div class="card">
         <form id="harvestForm" onsubmit="startHarvest(event)">
             <div class="harvest-main">
-                <input type="text" id="seedInput" placeholder="Enter seed keyword (e.g. modular kitchen, wardrobe)..." required>
+                <input type="text" id="seedInput" placeholder="Enter seed keyword..." required>
                 <select id="modeSelect">
                     <option value="az_suffix">Alphabet Soup: [Seed + A-Z] (Broad)</option>
                     <option value="az_prefix">Prefix Soup: [A-Z + Seed]</option>
-                    <option value="commercial">Commercial: Cost, Price, Contractor, Near Me</option>
+                    <option value="commercial">Commercial: Cost, Price, Near Me, Best</option>
                     <option value="questions">Questions: How, What, Why, Which</option>
                     <option value="prepositions">Prepositions: For, With, Vs, Near</option>
-                    <option value="numbers">Numbers: [Seed + 0-9] (Sizes, BHK)</option>
+                    <option value="numbers">Numbers: [Seed + 0-9]</option>
                     <option value="deep_harvest">Full Deep Harvest (All Modules)</option>
                     <option value="standard">Standard (Direct Suggestions)</option>
                 </select>
                 <button type="submit" class="btn btn-green" id="runBtn"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Harvest</button>
             </div>
 
-            <div class="options-toggle" onclick="toggleOptions()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Target Options (Region, Locations, Exclude)</div>
+            <div class="options-toggle" onclick="toggleOptions()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Target Options (Region, Location, Exclude)</div>
 
             <div class="harvest-options" id="harvestOptions">
                 <div>
                     <label class="field-lbl">Region</label>
                     <select id="regionSelect">
                         <option value="in:en" selected>India (en)</option>
-                        <option value="in:hi">India (hi)</option>
                         <option value="us:en">United States (en)</option>
                         <option value="uk:en">United Kingdom (en)</option>
                         <option value="ae:en">UAE (en)</option>
+                        <option value="in:hi">India (hi)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="field-lbl">Locations (comma-separated)</label>
-                    <input type="text" id="locationsInput" value="Navi Mumbai, Thane" placeholder="Navi Mumbai, Thane">
+                    <label class="field-lbl">Location (optional)</label>
+                    <input type="text" id="locationsInput" value="" placeholder="e.g. City or Region">
                 </div>
                 <div>
-                    <label class="field-lbl">Negative Exclusions</label>
-                    <input type="text" id="negativesInput" value="job, salary, vacancy, pdf, download" placeholder="jobs, salary, pdf">
+                    <label class="field-lbl">Exclude Words (optional)</label>
+                    <input type="text" id="negativesInput" value="" placeholder="e.g. jobs, free, login">
                 </div>
             </div>
         </form>
     </div>
-    {% endif %}
 
     <!-- PROGRESS BANNER -->
     <div id="progressContainer">
@@ -680,11 +664,12 @@ DASHBOARD_HTML = """
                     <tr data-keyword="{{ r['Keyword'] | lower }}" 
                         data-intent="{{ r.get('Search Intent', 'Commercial') }}" 
                         data-cluster="{{ r.get('Topic Cluster', '') }}" 
-                        data-words="{{ r.get('Word Count', '1') }}">
+                        data-words="{{ r.get('Word Count', '1') }}"
+                        data-bookmarked="{{ r.get('Bookmarked', '0') }}">
                         <td><input type="checkbox" class="row-select" value="{{ r['Keyword'] }}"></td>
                         <td>
                             {% set is_bm = (r.get('Bookmarked') == '1' or r.get('Bookmarked') == 1) %}
-                            <button class="star-btn {% if is_bm %}active{% endif %}" 
+                            <button type="button" class="star-btn {% if is_bm %}active{% endif %}" 
                                     onclick="toggleBookmark('{{ r['Keyword'] }}', this)" 
                                     title="Toggle save">
                                 <svg class="star-icon" viewBox="0 0 24 24" width="14" height="14" fill="{% if is_bm %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -741,6 +726,7 @@ DASHBOARD_HTML = """
     <script>
         let pollTimer = null;
         let filterDebounce = null;
+        let currentTab = 'all';
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -752,6 +738,22 @@ DASHBOARD_HTML = """
         function toggleOptions() {
             const el = document.getElementById("harvestOptions");
             el.style.display = (el.style.display === "grid") ? "none" : "grid";
+        }
+
+        function setViewTab(tab) {
+            currentTab = tab;
+            const tabAll = document.getElementById("tabAll");
+            const tabSaved = document.getElementById("tabSaved");
+            if (tabAll && tabSaved) {
+                if (tab === 'saved') {
+                    tabAll.classList.remove("active");
+                    tabSaved.classList.add("saved-active");
+                } else {
+                    tabAll.classList.add("active");
+                    tabSaved.classList.remove("saved-active");
+                }
+            }
+            applyFilter();
         }
 
         async function switchSheet(sheetName) {
@@ -767,7 +769,7 @@ DASHBOARD_HTML = """
         }
 
         async function promptNewSheet() {
-            const name = prompt("Enter new sheet name (e.g. modular_pune):");
+            const name = prompt("Enter new sheet name:");
             if (!name) return;
             const res = await fetch("/api/create_sheet", {
                 method: "POST",
@@ -783,6 +785,7 @@ DASHBOARD_HTML = """
         }
 
         async function toggleBookmark(keyword, btn) {
+            const tr = btn.closest("tr");
             const res = await fetch("/api/toggle_bookmark", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -791,18 +794,28 @@ DASHBOARD_HTML = """
             const data = await res.json();
             if (data.success) {
                 const svg = btn.querySelector("svg");
+                const countSavedEl = document.getElementById("countSaved");
+                let savedCount = countSavedEl ? (parseInt(countSavedEl.innerText, 10) || 0) : 0;
+
                 if (data.is_bookmarked) {
                     btn.classList.add("active");
                     if (svg) svg.setAttribute("fill", "currentColor");
+                    if (tr) tr.setAttribute("data-bookmarked", "1");
+                    savedCount++;
                     showToast("Saved to bookmarks");
                 } else {
                     btn.classList.remove("active");
                     if (svg) svg.setAttribute("fill", "none");
+                    if (tr) tr.setAttribute("data-bookmarked", "0");
+                    savedCount = Math.max(0, savedCount - 1);
                     showToast("Removed bookmark");
-                    if (window.location.pathname === "/saved") {
-                        btn.closest("tr").remove();
+                    if (currentTab === 'saved' && tr) {
+                        tr.style.display = "none";
                     }
                 }
+                if (countSavedEl) countSavedEl.innerText = savedCount;
+                const statSaved = document.getElementById("statSaved");
+                if (statSaved) statSaved.innerText = savedCount;
             }
         }
 
@@ -918,6 +931,7 @@ DASHBOARD_HTML = """
             const intent = document.getElementById("filterIntent").value;
             const cluster = document.getElementById("filterCluster").value;
             const minWords = parseInt(document.getElementById("filterWords").value, 10);
+            const onlySaved = (currentTab === 'saved');
 
             const rows = document.querySelectorAll("#keywordsTable tbody tr");
             let visibleCount = 0;
@@ -927,13 +941,15 @@ DASHBOARD_HTML = """
                 const rowIntent = tr.getAttribute("data-intent") || "";
                 const rowCluster = tr.getAttribute("data-cluster") || "";
                 const words = parseInt(tr.getAttribute("data-words") || "0", 10);
+                const isBookmarked = tr.getAttribute("data-bookmarked") === "1";
 
                 const matchQ = !query || kw.includes(query);
                 const matchIntent = !intent || rowIntent === intent;
                 const matchCluster = !cluster || rowCluster === cluster;
                 const matchWords = isNaN(minWords) || minWords === 0 || words >= minWords;
+                const matchSaved = !onlySaved || isBookmarked;
 
-                if (matchQ && matchIntent && matchCluster && matchWords) {
+                if (matchQ && matchIntent && matchCluster && matchWords && matchSaved) {
                     tr.style.display = "";
                     visibleCount++;
                 } else {
@@ -964,6 +980,13 @@ DASHBOARD_HTML = """
                 showToast(`Copied ${kws.length} keywords for GKP`);
             });
         }
+
+        // Initialize view based on URL if loaded with /saved
+        document.addEventListener("DOMContentLoaded", () => {
+            if (window.location.search.includes("view=saved") || window.location.pathname.includes("saved")) {
+                setViewTab('saved');
+            }
+        });
     </script>
 </body>
 </html>
@@ -1312,7 +1335,7 @@ def get_stats_and_data(rows):
         "clusters": sorted(list(clusters))
     }
 
-@app.route("/")
+@app.route("/", strict_slashes=False)
 def index():
     active_sheet = get_active_sheet()
     rows = load_all_keywords(active_sheet)
@@ -1329,7 +1352,7 @@ def index():
         **stats
     )
 
-@app.route("/saved")
+@app.route("/saved", strict_slashes=False)
 def saved_view():
     active_sheet = get_active_sheet()
     all_rows = load_all_keywords(active_sheet)
@@ -1348,7 +1371,7 @@ def saved_view():
         **stats
     )
 
-@app.route("/guide")
+@app.route("/guide", strict_slashes=False)
 def guide():
     return render_template_string(GUIDE_HTML)
 
