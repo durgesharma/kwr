@@ -553,38 +553,35 @@ DASHBOARD_HTML = """
             <div class="harvest-main">
                 <input type="text" id="seedInput" placeholder="Enter seed keyword..." required>
                 <select id="modeSelect">
-                    <option value="az_suffix">Alphabet Soup: [Seed + A-Z] (Broad)</option>
-                    <option value="az_prefix">Prefix Soup: [A-Z + Seed]</option>
-                    <option value="commercial">Commercial: Cost, Price, Near Me, Best</option>
-                    <option value="questions">Questions: How, What, Why, Which</option>
-                    <option value="prepositions">Prepositions: For, With, Vs, Near</option>
-                    <option value="numbers">Numbers: [Seed + 0-9]</option>
-                    <option value="deep_harvest">Full Deep Harvest (All Modules)</option>
-                    <option value="standard">Standard (Direct Suggestions)</option>
+                    <option value="az_suffix" selected>All variations (A to Z scan)</option>
+                    <option value="questions">Questions (How, What, Why, Where)</option>
+                    <option value="commercial">Buying & Pricing (Cost, Best, Near Me)</option>
+                    <option value="deep_harvest">Deep Scan (Combines all methods)</option>
+                    <option value="standard">Quick Search (Direct suggestions)</option>
                 </select>
                 <button type="submit" class="btn btn-green" id="runBtn"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Harvest</button>
             </div>
 
-            <div class="options-toggle" onclick="toggleOptions()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Target Options (Region, Location, Exclude)</div>
+            <div class="options-toggle" onclick="toggleOptions()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Optional Settings (Country, City, Negative Words)</div>
 
             <div class="harvest-options" id="harvestOptions">
                 <div>
-                    <label class="field-lbl">Region</label>
+                    <label class="field-lbl">Country & Language</label>
                     <select id="regionSelect">
-                        <option value="in:en" selected>India (en)</option>
-                        <option value="us:en">United States (en)</option>
-                        <option value="uk:en">United Kingdom (en)</option>
-                        <option value="ae:en">UAE (en)</option>
-                        <option value="in:hi">India (hi)</option>
+                        <option value="in:en" selected>India (English)</option>
+                        <option value="us:en">United States (English)</option>
+                        <option value="uk:en">United Kingdom (English)</option>
+                        <option value="ae:en">UAE (English)</option>
+                        <option value="in:hi">India (Hindi)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="field-lbl">Location (optional)</label>
-                    <input type="text" id="locationsInput" value="" placeholder="e.g. City or Region">
+                    <label class="field-lbl">City or Area (optional)</label>
+                    <input type="text" id="locationsInput" value="" placeholder="e.g. Mumbai, New York, London">
                 </div>
                 <div>
                     <label class="field-lbl">Exclude Words (optional)</label>
-                    <input type="text" id="negativesInput" value="" placeholder="e.g. jobs, free, login">
+                    <input type="text" id="negativesInput" value="" placeholder="Skip words like: free, jobs, login">
                 </div>
             </div>
         </form>
@@ -613,13 +610,6 @@ DASHBOARD_HTML = """
                     <input type="text" id="tableFilter" placeholder="Filter keywords..." oninput="triggerFilterLoading()">
                     <span class="search-indicator" id="searchLoading">filtering...</span>
                 </div>
-                
-                <select id="filterIntent" onchange="applyFilter()" style="width: 120px;">
-                    <option value="">All Intents</option>
-                    <option value="Transactional">Transactional</option>
-                    <option value="Commercial">Commercial</option>
-                    <option value="Informational">Informational</option>
-                </select>
 
                 <select id="filterCluster" onchange="applyFilter()" style="width: 140px;">
                     <option value="">All Clusters</option>
@@ -650,7 +640,6 @@ DASHBOARD_HTML = """
                         <th style="width: 24px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
                         <th style="width: 32px;" title="Bookmark"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></th>
                         <th>KEYWORD</th>
-                        <th>INTENT</th>
                         <th>CLUSTER</th>
                         <th>SOURCE</th>
                         <th>WORDS</th>
@@ -662,7 +651,6 @@ DASHBOARD_HTML = """
                 <tbody>
                     {% for r in rows %}
                     <tr data-keyword="{{ r['Keyword'] | lower }}" 
-                        data-intent="{{ r.get('Search Intent', 'Commercial') }}" 
                         data-cluster="{{ r.get('Topic Cluster', '') }}" 
                         data-words="{{ r.get('Word Count', '1') }}"
                         data-bookmarked="{{ r.get('Bookmarked', '0') }}">
@@ -683,16 +671,6 @@ DASHBOARD_HTML = """
                                     <a class="quick-link" href="https://trends.google.com/trends/explore?q={{ r['Keyword'] | urlencode }}&geo=IN" target="_blank">trends</a>
                                 </span>
                             </div>
-                        </td>
-                        <td>
-                            {% set it = r.get('Search Intent', 'Commercial') %}
-                            {% if it == 'Transactional' %}
-                                <span class="pill pill-tx">Transactional</span>
-                            {% elif it == 'Informational' %}
-                                <span class="pill pill-info">Informational</span>
-                            {% else %}
-                                <span class="pill pill-comm">Commercial</span>
-                            {% endif %}
                         </td>
                         <td style="color: var(--text-dim);">{{ r.get('Topic Cluster', '-') }}</td>
                         <td style="color: #64748b; font-size: 11px;">{{ r.get('Discovered From', '-') }}</td>
@@ -928,7 +906,6 @@ DASHBOARD_HTML = """
 
         function applyFilter() {
             const query = document.getElementById("tableFilter").value.toLowerCase();
-            const intent = document.getElementById("filterIntent").value;
             const cluster = document.getElementById("filterCluster").value;
             const minWords = parseInt(document.getElementById("filterWords").value, 10);
             const onlySaved = (currentTab === 'saved');
@@ -938,18 +915,16 @@ DASHBOARD_HTML = """
 
             rows.forEach(tr => {
                 const kw = tr.getAttribute("data-keyword") || "";
-                const rowIntent = tr.getAttribute("data-intent") || "";
                 const rowCluster = tr.getAttribute("data-cluster") || "";
                 const words = parseInt(tr.getAttribute("data-words") || "0", 10);
                 const isBookmarked = tr.getAttribute("data-bookmarked") === "1";
 
                 const matchQ = !query || kw.includes(query);
-                const matchIntent = !intent || rowIntent === intent;
                 const matchCluster = !cluster || rowCluster === cluster;
                 const matchWords = isNaN(minWords) || minWords === 0 || words >= minWords;
                 const matchSaved = !onlySaved || isBookmarked;
 
-                if (matchQ && matchIntent && matchCluster && matchWords && matchSaved) {
+                if (matchQ && matchCluster && matchWords && matchSaved) {
                     tr.style.display = "";
                     visibleCount++;
                 } else {
