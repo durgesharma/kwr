@@ -2,7 +2,7 @@ import csv
 import os
 from datetime import datetime
 
-CSV_FILE = "smartwood_keywords.csv"
+CSV_FILE = "keywords.csv"
 
 # Define columns based on your schema
 COLUMNS = [
@@ -54,11 +54,11 @@ def add_keyword_row(keyword, source, discovered_from, intent, cluster, location)
 if __name__ == "__main__":
     init_local_sheet()
     add_keyword_row(
-        keyword="modular kitchen Navi Mumbai",
+        keyword="seo keyword research tool",
         source="Google Autocomplete",
         discovered_from="seed",
         intent="Commercial",
-        cluster="Modular Kitchens",
-        location="Navi Mumbai"
+        cluster="SEO Tools",
+        location="Global"
     )
     print("Local sheet test completed successfully!")

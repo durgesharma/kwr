@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Lock
 
-DEFAULT_CSV = "smartwood_keywords.csv"
+DEFAULT_CSV = "keywords.csv"
 ACTIVE_SHEET_FILE = "active_sheet.txt"
 csv_lock = Lock()
 

@@ -74,7 +74,7 @@ HELP_TEXT = """
      python kwr.py sync-sheets --url "<YOUR_GOOGLE_SHEET_URL>"
 
 [5] FILES & STORAGE:
-  smartwood_keywords.csv   Local keyword database (no setup required)
+  keywords.csv             Local keyword database (no setup required)
   requirements.txt         Python package list
   credentials.json         Google Cloud Service Account key (optional)
   sheets_config.json       Saved Google Sheet settings (auto-generated)

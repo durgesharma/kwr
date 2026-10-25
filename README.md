@@ -7,8 +7,10 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
 ## Key Features & Highlights
 
 - **Multi-Seed Comma-Separated Input (`word , word , word`)**:
-  - Enter multiple seed words separated by commas (e.g., `modular kitchen, wardrobe, tv unit`) in a single run.
+  - Enter multiple seed words separated by commas (e.g., `seo audit , technical seo , local seo`) in a single run.
   - Each comma-separated word is expanded independently using real live Google Autocomplete suggestions, with automatic seed-stem verification so only genuine user searches containing each target word are collected.
+- **Persistent Seed & Form State**:
+  - Your entered Seed Keyword, Expansion Mode, Country/Region, Location Modifiers, and Negative Keywords automatically persist across sheet switches, new sheet creation, and Harvest page reloads—your entered seed is never lost.
 - **Streamlined Discovery Modes & Advanced `(algos)`**:
   - `All variations (A to Z scan)`: Complete alphabet soup expansion (`seed + a..z`).
   - `Questions (How, What, Why, Where)`: High-intent interrogative queries.
@@ -50,8 +52,9 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
   - Complete dark matte theme parity for the built-in Field Manual (`/guide`).
   - Clean, crisp SVG vector icons replacing all emojis across the entire UI.
 - **Multi-Sheet Management**:
-  - Organize keyword campaigns into isolated local CSV sheets (e.g. `smartwood_keywords.csv`, `real_estate.csv`).
-  - Create and switch sheets seamlessly right from the web dashboard.
+  - Starts with a clean universal `keywords.csv` workspace out of the box.
+  - Organize keyword campaigns into isolated local CSV sheets (e.g. `keywords.csv`, `saas_campaign.csv`, `ecommerce_seo.csv`).
+  - Create and switch sheets seamlessly right from the web dashboard without losing your current seed input.
 - **Google Sheets Cloud Sync (Optional)**:
   - 1-click or CLI synchronization to push local keyword sheets directly to Google Sheets using a Google Service Account.
 
@@ -89,15 +92,15 @@ Open **`http://127.0.0.1:5000`** in your browser.
 ## Web Command Center Walkthrough
 
 1. **Header & Field Manual**:
-   - Tap the **`[?] Guide`** button in the top right to view the field manual and tactical SEO guide at `/guide` (now in matching dark mode).
+   - Tap the **`[?] Guide`** button in the top right to view the updated Field Manual at `/guide` covering multi-word comma-separated seeds, all 6 `(algos)` engines, persistent form state, and selection-aware batch workflows.
 2. **Sheet Management**:
-   - Use the Sheet dropdown to switch between projects or tap **`New`** to create a new campaign sheet instantly on your device.
+   - Use the Sheet dropdown to switch between projects or tap **`New`** to create a new campaign sheet instantly on your device. Your typed seed and settings stay intact when switching sheets.
 3. **Interactive Metric Cards**:
    - Tap **Keywords** to view all discovered terms.
-   - Tap **Saved** to focus only on starred high-priority keywords.
+   - Tap **Saved** to focus only on bookmarked high-priority keywords.
    - Tap **Export CSV** to download the active view or whatever keywords you currently have checked.
 4. **Keyword Harvester**:
-   - Enter a seed term (e.g., `interior designer`), choose a discovery mode, optionally enter target cities or negative keywords, and click **Harvest**.
+   - Enter a single seed or multiple comma-separated seeds (e.g., `cloud hosting , vps server , dedicated hosting`), choose a discovery mode or `(algos)` engine, optionally enter target cities or negative keywords, and click **Harvest**.
 5. **Selection & Bulk Actions**:
    - Check individual rows or use the header checkbox to select all visible rows.
    - Click the **Copy** button to copy selected keywords (or all visible keywords if none are selected) to your clipboard for Google Keyword Planner.
@@ -123,14 +126,17 @@ python kwr.py help
 
 ### Terminal Harvest Examples:
 ```bash
-# Standard Alphabet Soup A-Z scan
-python kwr.py harvest "modular kitchen" --mode az_suffix
+# Multi-seed Smart Scan (algos)
+python kwr.py harvest "seo audit, technical seo, backlink checker" --mode algo_multiseed
 
-# Questions & Needs scan with geo-targeting
-python kwr.py harvest "interior designer" --mode commercial --loc "Navi Mumbai, Thane"
+# Recursive Snowball Graph (algos)
+python kwr.py harvest "cloud hosting" --mode algo_recursive
 
-# Full deep harvest
-python kwr.py harvest "wardrobe contractor" --mode deep_harvest
+# Commercial & Buyer Intent scan with geo-targeting
+python kwr.py harvest "web design agency" --mode commercial --loc "New York, Austin"
+
+# Ultra Deep All-In-One (algos)
+python kwr.py harvest "crm software" --mode algo_ultra
 ```
 
 ---
@@ -156,5 +162,12 @@ You can sync discovered keywords directly to your own Google Sheet alongside the
 
 ---
 
-## Built-in Field Manual
-Click the **`[?] Guide`** button in the web dashboard or navigate directly to **`/guide`** to read the complete field manual covering autocomplete algorithms, search intent classification, and search volume extraction via Google Keyword Planner.
+## Built-in Field Manual (`/guide`)
+Click the **`[?] Guide`** button in the web dashboard or navigate directly to **`/guide`** to read the complete 7-chapter Field Manual covering:
+1. **What's New & Core Architecture**: Live concurrent Google Autocomplete harvesting & platform updates.
+2. **Multi-Word Comma-Separated Seeds (`word , word , word`)**: How independent seed expansion, pairwise probes, and token verification work.
+3. **Standard Discovery Modes & Advanced `(algos)`**: When to use each of the 6 `(algos)` modes (`Multi-Word Smart Scan`, `Recursive Snowball Graph`, `Wildcard & Gap Fill`, `Semantic & Buyer Matrix`, `Answer & Question Miner`, `Ultra Deep All-In-One`).
+4. **Sheet Workspaces, Persistent Form State & Selection Actions**: Managing CSV sheets without losing your seed input and using selection-aware Copy, Delete, and Export CSV.
+5. **Search Intent Dissection & Long-Tail Filtering**: Filtering by word length and sorting by date.
+6. **Local Geo-Targeting & Negative Keyword Pruning**: Isolating local markets and blocking noise terms.
+7. **Extracting Search Volume with Google Keyword Planner**: Zero-cost search volume and CPC workflow.

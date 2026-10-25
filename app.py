@@ -1131,7 +1131,52 @@ DASHBOARD_HTML = """
             applyFilterAndSort();
         }
 
+        function saveFormState() {
+            try {
+                const seedEl = document.getElementById("seedInput");
+                const modeEl = document.getElementById("modeSelect");
+                const regEl = document.getElementById("regionSelect");
+                const locEl = document.getElementById("locationsInput");
+                const negEl = document.getElementById("negativesInput");
+                if (seedEl) localStorage.setItem("kwr_seed", seedEl.value);
+                if (modeEl) localStorage.setItem("kwr_mode", modeEl.value);
+                if (regEl) localStorage.setItem("kwr_region", regEl.value);
+                if (locEl) localStorage.setItem("kwr_locations", locEl.value);
+                if (negEl) localStorage.setItem("kwr_negatives", negEl.value);
+            } catch (e) {}
+        }
+
+        function restoreFormState() {
+            try {
+                const seedEl = document.getElementById("seedInput");
+                const modeEl = document.getElementById("modeSelect");
+                const regEl = document.getElementById("regionSelect");
+                const locEl = document.getElementById("locationsInput");
+                const negEl = document.getElementById("negativesInput");
+                const savedSeed = localStorage.getItem("kwr_seed");
+                const savedMode = localStorage.getItem("kwr_mode");
+                const savedReg = localStorage.getItem("kwr_region");
+                const savedLoc = localStorage.getItem("kwr_locations");
+                const savedNeg = localStorage.getItem("kwr_negatives");
+                if (seedEl && savedSeed !== null) seedEl.value = savedSeed;
+                if (modeEl && savedMode) modeEl.value = savedMode;
+                if (regEl && savedReg) regEl.value = savedReg;
+                if (locEl && savedLoc !== null) locEl.value = savedLoc;
+                if (negEl && savedNeg !== null) negEl.value = savedNeg;
+
+                ["seedInput", "locationsInput", "negativesInput"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener("input", saveFormState);
+                });
+                ["modeSelect", "regionSelect"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener("change", saveFormState);
+                });
+            } catch (e) {}
+        }
+
         async function switchSheet(sheetName) {
+            saveFormState();
             const res = await fetch("/api/switch_sheet", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1146,6 +1191,7 @@ DASHBOARD_HTML = """
         async function promptNewSheet() {
             const name = prompt("Enter new sheet name:");
             if (!name) return;
+            saveFormState();
             const res = await fetch("/api/create_sheet", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1212,6 +1258,7 @@ DASHBOARD_HTML = """
 
         async function startHarvest(e) {
             e.preventDefault();
+            saveFormState();
             const seed = document.getElementById("seedInput").value.trim();
             const mode = document.getElementById("modeSelect").value;
             const regVal = document.getElementById("regionSelect").value.split(":");
@@ -1472,6 +1519,7 @@ DASHBOARD_HTML = """
 
         // Initialize row cache and view state
         document.addEventListener("DOMContentLoaded", () => {
+            restoreFormState();
             initRowCache();
             if (window.location.search.includes("view=saved") || window.location.pathname.includes("saved")) {
                 setViewTab('saved');
@@ -1640,168 +1688,143 @@ GUIDE_HTML = """
         <div class="toc">
             <h3>Table of Contents</h3>
             <ol>
-                <li><a href="#ch1">Chapter 1: The Anatomy of Google Autocomplete</a></li>
-                <li><a href="#ch2">Chapter 2: The Alphabet Soup Method (A-Z Mechanics)</a></li>
-                <li><a href="#ch3">Chapter 3: Search Intent Dissection (Transactional vs Informational)</a></li>
-                <li><a href="#ch4">Chapter 4: Local Geo-Targeting for Trades & Execution</a></li>
-                <li><a href="#ch5">Chapter 5: Long-Tail Keyword Strategy (3+ and 4+ Words)</a></li>
-                <li><a href="#ch6">Chapter 6: Workflow: Extracting Search Volume with Google Keyword Planner</a></li>
-                <li><a href="#ch7">Chapter 7: Negative Keyword Pruning and Clean Database Maintenance</a></li>
+                <li><a href="#ch1">Chapter 1: What's New & Core Architecture</a></li>
+                <li><a href="#ch2">Chapter 2: Multi-Word Comma-Separated Seeds (word , word , word)</a></li>
+                <li><a href="#ch3">Chapter 3: Standard Discovery Modes & Advanced (algos)</a></li>
+                <li><a href="#ch4">Chapter 4: Sheet Workspaces, Persistent Form State & Selection Actions</a></li>
+                <li><a href="#ch5">Chapter 5: Search Intent Dissection & Long-Tail Filtering</a></li>
+                <li><a href="#ch6">Chapter 6: Local Geo-Targeting & Negative Keyword Pruning</a></li>
+                <li><a href="#ch7">Chapter 7: Extracting Search Volume with Google Keyword Planner</a></li>
             </ol>
         </div>
 
         <section id="ch1">
-            <h2>Chapter 1: The Anatomy of Google Autocomplete</h2>
+            <h2>Chapter 1: What's New & Core Architecture</h2>
             <p>
-                Google Autocomplete is not a random text prediction tool. It is an algorithmic projection of aggregate search volume, recency, and user intent. When a human begins typing a phrase into Google, the algorithm evaluates millions of historical queries to predict what that person is most likely searching for next.
+                <strong>KWR Command Center</strong> queries Google's live public Autocomplete JSON endpoint directly using a high-speed concurrent worker pool (<code>ThreadPoolExecutor</code> + persistent HTTP connection pooling). It never fabricates synthetic keywords—every phrase stored in your sheet is an authentic search query actively typed by real Google users, verified by token-boundary matching.
             </p>
-            <p>
-                Unlike standard third-party keyword research databases (which are often updated only once every 30 to 90 days), Google's autocomplete feed reflects <strong>actual current search habits</strong>. If a term appears in autocomplete, it guarantees that genuine users are frequently typing that exact string into search boxes.
-            </p>
-            <p>
-                This tool interacts directly with Google's public suggestion interface. It simulates search journeys programmatically, cataloging every suggested stem before standard SEO tools report on them.
-            </p>
+            <h3>Latest Platform Updates</h3>
+            <ul>
+                <li><strong>Multi-Word Comma-Separated Seed Harvesting:</strong> Enter multiple seeds separated by commas (e.g., <code>seo audit , technical seo , local seo</code>) in a single run. Each seed is expanded independently and verified for real relevance.</li>
+                <li><strong>6 Advanced <code>(algos)</code> Discovery Engines:</strong> Added <em>Multi-Word Smart Scan (algos)</em>, <em>Recursive Snowball Graph (algos)</em>, <em>Wildcard &amp; Gap Fill (algos)</em>, <em>Semantic &amp; Buyer Matrix (algos)</em>, <em>Answer &amp; Question Miner (algos)</em>, and <em>Ultra Deep All-In-One (algos)</em> directly in the Expansion Mode selector.</li>
+                <li><strong>Persistent Seed &amp; Form Inputs:</strong> Your entered Seed Keyword, Mode, Country/Region, Locations, and Negative words are automatically saved across sheet switches and Harvest reloads so your input is never lost.</li>
+                <li><strong>Selection-Aware Copy, Delete &amp; Export CSV:</strong> Select specific rows with checkboxes to Copy, Delete, or Export only those rows—or leave checkboxes unchecked to act on your currently visible tab (<code>Keywords</code> or <code>Saved</code>).</li>
+                <li><strong>60fps Large-Table Rendering:</strong> In-memory row caching, <code>DocumentFragment</code> batch sorting, and CSS <code>content-visibility: auto</code> allow instant filtering and sorting even with thousands of rows.</li>
+            </ul>
         </section>
 
         <hr>
 
         <section id="ch2">
-            <h2>Chapter 2: The Alphabet Soup Method (A-Z Mechanics)</h2>
+            <h2>Chapter 2: Multi-Word Comma-Separated Seeds (word , word , word)</h2>
             <p>
-                The primary constraint of human keyword brainstorming is mental bias. When thinking about "modular kitchen", one usually recalls only four or five obvious phrases: "price", "designs", "materials", and "cabinets".
-            </p>
-            <p>
-                The <strong>Alphabet Soup</strong> technique breaks this constraint by systematically querying the search engine with the seed followed by every letter of the alphabet:
+                You can research a single seed phrase or batch-harvest multiple independent seeds in one click by separating each word or phrase with a comma (<code>,</code>) inside the <strong>Enter Seed Keyword</strong> box:
             </p>
             <pre>
-modular kitchen a -> acrylic, accessories, appliances, aluminium, arch...
-modular kitchen b -> basket, budget, backsplash, bar counter, brands...
-modular kitchen c -> cost, catalogue, corner solutions, cabinets, carpenter...
-...
-modular kitchen z -> zinc hinges, zero maintenance, z-profile handles...
+cloud hosting , dedicated server , vps pricing , managed kubernetes
             </pre>
             <p>
-                <strong>Suffix Mode versus Prefix Mode:</strong>
-            </p>
-            <ul>
-                <li><strong>Suffix Mode (Seed + Letter):</strong> Discovers sub-specifications, components, brands, and variations attached to your main subject. This is ideal for product catalogs, service pages, and commercial offerings.</li>
-                <li><strong>Prefix Mode (Letter + Seed):</strong> Discovers descriptors, adjectives, and qualifiers placed before the seed (e.g., <em>"acrylic modular kitchen"</em>, <em>"best modular kitchen"</em>, <em>"cheap modular kitchen"</em>).</li>
-            </ul>
-        </section>
-
-        <hr>
-
-        <section id="ch3">
-            <h2>Chapter 3: Search Intent Dissection</h2>
-            <p>
-                Not all keywords carry equal commercial value. Ranking #1 for a term that brings visitors with no budget or willingness to buy will not generate revenue. The KWR engine automatically categorizes discovered phrases into three foundational intents:
-            </p>
-            <h3>1. Transactional Intent (High Commercial Value)</h3>
-            <p>
-                The user has their credit card or cheque book ready. They are looking to hire, buy, or obtain a quote immediately. Look for indicators such as:
-            </p>
-            <ul>
-                <li><code>cost</code>, <code>price</code>, <code>rates per sq ft</code>, <code>charges</code></li>
-                <li><code>contractor</code>, <code>service</code>, <code>carpenter near me</code>, <code>agency</code></li>
-                <li><code>estimate</code>, <code>quotation</code>, <code>installation</code></li>
-            </ul>
-            <p>
-                <em>Action:</em> Target these keywords directly on Service Pages, Pricing Calculators, and Contact Landing Pages.
-            </p>
-
-            <h3>2. Commercial Investigation Intent (Comparison Stage)</h3>
-            <p>
-                The user knows they want the service, but is evaluating options, materials, or providers.
-            </p>
-            <ul>
-                <li><code>best modular kitchen brands</code>, <code>acrylic vs laminate</code>, <code>reviews</code>, <code>top contractors</code></li>
-            </ul>
-            <p>
-                <em>Action:</em> Target these keywords on Material Guides, Comparison Charts, and Portfolio Case Studies.
-            </p>
-
-            <h3>3. Informational Intent (Top of Funnel / Educational)</h3>
-            <p>
-                The user has a question or needs maintenance/DIY information.
-            </p>
-            <ul>
-                <li><code>how to clean modular kitchen trolleys</code>, <code>what is standard counter height</code>, <code>why hinges rust</code></li>
-            </ul>
-            <p>
-                <em>Action:</em> Target these keywords on Blog Articles and FAQ sections to build site authority and capture email subscribers.
-            </p>
-        </section>
-
-        <hr>
-
-        <section id="ch4">
-            <h2>Chapter 4: Local Geo-Targeting for Trades & Execution</h2>
-            <p>
-                For local contractors, trade professionals, and regional service businesses, generic nationwide searches are wasteful. A user in Delhi searching for "carpenter" will never hire a workshop in another state or distant district.
-            </p>
-            <p>
-                To generate high-yield local client leads:
+                <strong>How Independent Multi-Seed Harvesting Works:</strong>
             </p>
             <ol>
-                <li>Input your micro-locations into the <strong>Location Modifiers</strong> field: <code>Navi Mumbai, Vashi, Thane, Kharghar, Panvel, Nerul, Seawoods, Ghansoli</code>.</li>
-                <li>Select the <strong>Commercial & Buyer Intent</strong> expansion mode.</li>
-                <li>The engine combines your trade seed with each specific node to extract actual localized search stems (e.g. <em>"modular kitchen trolley repair Vashi"</em>, <em>"wardrobe contractor near Kharghar"</em>).</li>
+                <li><strong>Clean Tokenization &amp; Deduplication:</strong> The engine splits your input on commas, trims extra spaces, and removes duplicate seeds while preserving order.</li>
+                <li><strong>Independent Query Matrix per Seed:</strong> Every individual seed runs through your selected expansion mode independently, tagged with its own parent seed name in the table.</li>
+                <li><strong>Pairwise Cross-Seed Probes:</strong> When 2 or more seeds are provided, the engine also tests natural 2-seed combinations to uncover real multi-concept queries that users actually type into Google.</li>
+                <li><strong>Strict Word-Stem Verification:</strong> Every returned Google Autocomplete suggestion is verified against your seed tokens before saving, guaranteeing high-signal results with zero unrelated noise.</li>
             </ol>
         </section>
 
         <hr>
 
-        <section id="ch5">
-            <h2>Chapter 5: Long-Tail Keyword Strategy (3+ and 4+ Words)</h2>
+        <section id="ch3">
+            <h2>Chapter 3: Standard Discovery Modes & Advanced (algos)</h2>
             <p>
-                Single-word or two-word queries like "kitchen" or "interior designer" are fiercely competitive, dominated by directory giants (Justdial, Houzz, Livspace).
+                Below the seed input box, the <strong>Expansion Mode</strong> dropdown provides both classic autocomplete sweeps and 6 deep-mining <code>(algos)</code> engines:
             </p>
+            <h3>Standard Expansion Modes</h3>
+            <ul>
+                <li><strong>Standard (A-Z + Intent):</strong> Balanced sweep combining alphabet suffixes (<code>seed a-z</code>), high-intent commercial modifiers, and question stems.</li>
+                <li><strong>A-Z Suffix Only (seed a-z):</strong> Appends every letter <code>a</code> through <code>z</code> after your seed to uncover specifications, sub-types, and categories.</li>
+                <li><strong>A-Z Prefix Only (a-z seed):</strong> Places every letter <code>a</code> through <code>z</code> before your seed to uncover adjectives and leading qualifiers.</li>
+                <li><strong>Questions Only (who, what, how...):</strong> Focuses strictly on informational question queries for blog guides and FAQ schemas.</li>
+                <li><strong>Commercial &amp; Buyer Intent:</strong> Queries pricing, quotes, agency/provider terms, and location modifiers.</li>
+                <li><strong>Deep Scan (All Combinations):</strong> Combines all standard modes with numeric expansions (<code>0-9</code>).</li>
+            </ul>
+
+            <h3>Advanced Discovery Algorithms — <code>(algos)</code></h3>
+            <ul>
+                <li><strong>Multi-Word Smart Scan (algos):</strong> Optimized for comma-separated seeds; runs base + high-intent modifiers + A–Z suffixes + question prefixes + cross-seed combinations.</li>
+                <li><strong>Recursive Snowball Graph (algos):</strong> 2-hop Breadth-First Search (BFS) across Google's live suggestion graph. Harvests Layer-1 autocomplete suggestions and automatically re-queries the top discovered phrases to uncover deep Layer-2 long-tail keywords.</li>
+                <li><strong>Wildcard &amp; Gap Fill (algos):</strong> Injects internal gap probes (<code>seed * word</code>, <code>* seed</code>, <code>seed a..z lastword</code>) and natural connectors (<code>for</code>, <code>with</code>, <code>vs</code>, <code>without</code>, <code>near</code>, <code>under</code>) to find middle-of-phrase completions.</li>
+                <li><strong>Semantic &amp; Buyer Matrix (algos):</strong> Exhaustive commercial, transactional, comparison, and customer-segment matrix (<code>cost</code>, <code>pricing</code>, <code>software</code>, <code>agency</code>, <code>alternatives</code>, <code>for small business</code>, <code>for enterprise</code>).</li>
+                <li><strong>Answer &amp; Question Miner (algos):</strong> Deep People-Also-Ask style interrogative, problem/troubleshooting, and comparison harvester (<code>how to</code>, <code>why does</code>, <code>is it worth</code>, <code>pros and cons</code>, <code>vs</code>).</li>
+                <li><strong>Ultra Deep All-In-One (algos):</strong> Maximum yield engine combining Multi-Word Smart Scan + Wildcard Gap Fill + Semantic Matrix + Question Miner + 2-Hop Recursive Snowball expansion.</li>
+            </ul>
+        </section>
+
+        <hr>
+
+        <section id="ch4">
+            <h2>Chapter 4: Sheet Workspaces, Persistent Form State & Selection Actions</h2>
             <p>
-                Long-tail phrases composed of four, five, or six words carry three distinct advantages:
+                Manage multiple campaigns cleanly using the top navigation bar and selection toolbar:
             </p>
             <ul>
-                <li><strong>Near-Zero Competition:</strong> Major corporations rarely optimize dedicated landing pages for specific 5-word queries.</li>
-                <li><strong>Clear, Unambiguous Intent:</strong> A user typing <em>"acrylic l shaped modular kitchen cost per square foot in Navi Mumbai"</em> knows precisely what they want.</li>
-                <li><strong>Exponential Conversion Rate:</strong> Conversion rates on 4+ word targeted phrases are typically 3x to 5x higher than 1-2 word head terms.</li>
+                <li><strong>Sheet Selector &amp; New Sheet (<code>+</code>):</strong> Switch between CSV sheets at the top-left or click <code>+</code> to create a dedicated workspace for a new client or niche.</li>
+                <li><strong>Persistent Seed &amp; Settings:</strong> Switching sheets or clicking <strong>Harvest</strong> automatically preserves your entered Seed Keyword, Mode, Country, Locations, and Negative filters so you never have to retype them.</li>
+                <li><strong>Keywords vs. Saved Tabs:</strong> Click the <strong>Bookmark ribbon</strong> on any row to save top keywords. Switch between the <strong>Keywords</strong> tab and the <strong>Saved</strong> tab at any time.</li>
+                <li><strong>Selection-Aware Copy, Delete &amp; Export CSV:</strong>
+                    <ul>
+                        <li><strong>When checkboxes are selected:</strong> Clicking <strong>Copy</strong>, <strong>Delete</strong>, or <strong>Export CSV</strong> operates <em>strictly</em> on the checked rows.</li>
+                        <li><strong>When no checkboxes are selected:</strong> Clicking <strong>Copy</strong> or <strong>Export CSV</strong> exports all currently visible rows in your active tab (e.g., only your bookmarked rows when viewing the <strong>Saved</strong> tab, or filtered rows in the <strong>Keywords</strong> tab).</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <hr>
+
+        <section id="ch5">
+            <h2>Chapter 5: Search Intent Dissection & Long-Tail Filtering</h2>
+            <p>
+                Every harvested keyword is automatically scored for <strong>Priority</strong> (High, Medium, Low), <strong>Word Count</strong>, and <strong>Search Intent</strong>:
+            </p>
+            <ul>
+                <li><strong>Transactional Intent (High Commercial Value):</strong> Queries containing direct purchase or hiring signals such as <code>cost</code>, <code>price</code>, <code>quote</code>, <code>buy</code>, <code>service</code>, <code>agency</code>, or <code>near me</code>. Target these on service and landing pages.</li>
+                <li><strong>Commercial Investigation (Comparison Stage):</strong> Queries evaluating options such as <code>best</code>, <code>top</code>, <code>reviews</code>, <code>vs</code>, or <code>alternatives</code>. Target these on comparison pages and case studies.</li>
+                <li><strong>Informational Intent (Educational / Top of Funnel):</strong> Queries asking <code>how</code>, <code>what</code>, <code>why</code>, <code>guide</code>, or <code>tutorial</code>. Target these with blog posts and documentation.</li>
             </ul>
             <p>
-                Use the <strong>"4+ Words"</strong> filter on the dashboard to immediately isolate high-leverage long-tail targets.
+                Use the filter bar to isolate <strong>High Priority</strong> phrases, filter by <strong>3+ or 4+ Words</strong> for low-competition long-tail gems, or sort by <strong>Date: Newest / Oldest</strong> to inspect your latest harvest batch.
             </p>
         </section>
 
         <hr>
 
         <section id="ch6">
-            <h2>Chapter 6: Workflow: Extracting Search Volume with Google Keyword Planner</h2>
+            <h2>Chapter 6: Local Geo-Targeting & Negative Keyword Pruning</h2>
             <p>
-                Google Autocomplete reveals <em>what</em> people search, but does not provide historical monthly search volume numbers. To get exact monthly search volume figures without paying hundreds of dollars for SEO subscriptions:
+                Open the <strong>Advanced Filters (Locations &amp; Negative Words)</strong> drawer below the mode selector to tailor harvesting to your exact market:
             </p>
-            <ol>
-                <li>In the KWR Dashboard, apply your desired filters (e.g., select <em>Transactional</em> intent and <em>High</em> priority).</li>
-                <li>Click the button <strong>"Copy List"</strong>. The dashboard immediately copies the exact keyword list to your operating system clipboard.</li>
-                <li>Open <a href="https://ads.google.com/home/tools/keyword-planner/" target="_blank">Google Keyword Planner</a> (free with any Google Ads account).</li>
-                <li>Select <strong>"Get search volume and forecasts"</strong>.</li>
-                <li>Paste your copied clipboard list directly into the box and press <strong>"Get Started"</strong>.</li>
-                <li>Google will return exact historical monthly searches, 3-month trends, YoY changes, and top-of-page bid estimates for every single harvested phrase.</li>
-            </ol>
+            <ul>
+                <li><strong>Location Modifiers (Geo-Targeting):</strong> Enter target cities, regions, or neighborhoods separated by commas (e.g., <code>New York, Austin, Chicago, Seattle</code>). The engine pairs your seeds with each location and marks matching suggestions with <strong>Local Commercial</strong> intent.</li>
+                <li><strong>Negative Keywords (Noise Blocking):</strong> Enter unwanted terms separated by commas (e.g., <code>jobs, salary, vacancy, free, pdf, course, login</code>). Any suggestion containing a negative word is automatically blocked before saving.</li>
+            </ul>
         </section>
 
         <hr>
 
         <section id="ch7">
-            <h2>Chapter 7: Negative Keyword Pruning and Clean Database Maintenance</h2>
+            <h2>Chapter 7: Extracting Search Volume with Google Keyword Planner</h2>
             <p>
-                A database with 10,000 garbage keywords is useless. A database with 300 actionable, highly qualified buyer queries is a gold mine.
+                To pair your live Google Autocomplete keywords with historical monthly search volume and CPC bid data for free:
             </p>
-            <p>
-                The KWR engine includes an active negative filter. Any suggestion containing forbidden terms is blocked before it touches your CSV storage. Recommended negative tokens for contractors and services:
-            </p>
-            <pre>
-job, jobs, salary, vacancy, vacancies, pdf, download, course, training, exam, syllabus, login, portal, app download, free, second hand, used
-            </pre>
-            <p>
-                Regularly review the dashboard table, mark irrelevant queries with the <strong>"Discard"</strong> status or check their boxes and execute <strong>"Delete"</strong>. Keep your keyword pool lean, verified, and ready for deployment.
-            </p>
+            <ol>
+                <li>Filter or select your target keywords in the KWR Dashboard (or switch to your curated <strong>Saved</strong> tab).</li>
+                <li>Click <strong>Copy</strong> to copy the exact keyword strings to your clipboard, or click <strong>Export CSV</strong> to download the spreadsheet.</li>
+                <li>Open <a href="https://ads.google.com/home/tools/keyword-planner/" target="_blank">Google Keyword Planner</a> and choose <strong>"Get search volume and forecasts"</strong>.</li>
+                <li>Paste your copied keywords and click <strong>Get Started</strong> to inspect monthly search volumes, 3-month trends, and top-of-page bid estimates.</li>
+            </ol>
         </section>
     </div>
 </body>
