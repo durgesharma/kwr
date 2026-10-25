@@ -17,16 +17,26 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
 - **Unified Interactive Metric Strip**:
   - **Keywords Card**: Displays total count and toggles full keyword list.
   - **Saved Card**: Displays starred count and filters instantly to bookmarked keywords with zero page reloads.
-  - **Export Card**: One-tap direct CSV export.
+  - **Export Card**: Context-aware CSV export. Downloads selected checkboxes if any, or active view (`Saved` vs `All`).
+- **Selection-Aware Batch Operations**:
+  - **Contextual Copy**: Copies only selected keywords when checkboxes are checked; copies all visible/active tab keywords when unselected. Supports clipboard fallback for local HTTP/Termux environments.
+  - **Instant In-Place Deletion**: Single-row and bulk checkbox deletions remove elements directly from the DOM and update all counter cards in real time without slow full-page reloads.
+  - **Live Selection Counter**: Dynamic status bar displays `<N> selected · <Total> rows` with automatic indeterminate/master checkbox synchronization.
+- **High-Performance Architecture & Zero-Lag DOM**:
+  - **In-Memory Row Cache**: Eliminates repeated DOM queries and layout thrashing during live keyword filtering.
+  - **DocumentFragment Re-ordering**: Date sorting batches DOM updates into a single reflow instead of hundreds of live append mutations.
+  - **CSS `content-visibility: auto`**: Off-screen rows skip layout and painting overhead for buttery smooth 60fps scrolling on mobile devices.
+  - **Sheet Header Cache**: In-memory caching in the engine eliminates redundant disk reads during batch updates.
 - **Clean, Distraction-Free Keyword Table**:
   - Zero clutter: Focuses on core data (`KEYWORD`, `DATE`, `BOOKMARK`, `ACTIONS`) without redundant columns.
+  - **Square Row Delete Buttons**: Consistent `24x24px` theme-matched square `×` buttons (`.row-del-btn`) with subtle danger hover states.
   - **Date Ordering**: Sort instantly by `All` (natural sheet order), `Date: Newest`, or `Date: Oldest`.
   - **Word Length Filtering**: Filter by length (`2+ Words`, `3+ Words`, `4+ Words`, etc.) to isolate long-tail queries.
   - **Real-Time Search**: Instant live keyword filtering as you type.
   - **Compact Phone Action Bar**: Left-aligned date/word controls with right-aligned icon-only Copy and Delete buttons.
-  - Dynamic status bar showing live matching row counts (`Showing X of Y rows`).
-- **Minimalist Aesthetic**:
-  - Soft, eye-friendly desaturated dark matte theme to eliminate glare and eye strain.
+- **Minimalist Aesthetic & Theme Parity**:
+  - Soft, eye-friendly desaturated dark matte theme (`#16171a` / `#1e2025`) to eliminate glare and eye strain.
+  - Complete dark matte theme parity for the built-in Field Manual (`/guide`).
   - Clean, crisp SVG vector icons replacing all emojis across the entire UI.
 - **Multi-Sheet Management**:
   - Organize keyword campaigns into isolated local CSV sheets (e.g. `smartwood_keywords.csv`, `real_estate.csv`).
@@ -68,18 +78,19 @@ Open **`http://127.0.0.1:5000`** in your browser.
 ## Web Command Center Walkthrough
 
 1. **Header & Field Manual**:
-   - Tap the **`[?] Guide`** button in the top right to view the built-in manual and operational guide at `/guide`.
+   - Tap the **`[?] Guide`** button in the top right to view the field manual and tactical SEO guide at `/guide` (now in matching dark mode).
 2. **Sheet Management**:
-   - Use the Sheet dropdown to switch between projects or tap **`+ New`** to create a new campaign sheet instantly on your device.
+   - Use the Sheet dropdown to switch between projects or tap **`New`** to create a new campaign sheet instantly on your device.
 3. **Interactive Metric Cards**:
    - Tap **Keywords** to view all discovered terms.
    - Tap **Saved** to focus only on starred high-priority keywords.
-   - Tap **Export CSV** to download the active sheet.
+   - Tap **Export CSV** to download the active view or whatever keywords you currently have checked.
 4. **Keyword Harvester**:
-   - Enter a seed term (e.g., `interior designer`), choose a discovery mode, optionally enter target cities or suffixes, and click **Harvest**.
-5. **Filtering & Bulk Actions**:
-   - Filter by date (`All`, `Newest`, `Oldest`), word count, or search text.
-   - Select multiple rows with checkboxes, then use the bottom action bar to copy selected keywords or delete them in bulk.
+   - Enter a seed term (e.g., `interior designer`), choose a discovery mode, optionally enter target cities or negative keywords, and click **Harvest**.
+5. **Selection & Bulk Actions**:
+   - Check individual rows or use the header checkbox to select all visible rows.
+   - Click the **Copy** button to copy selected keywords (or all visible keywords if none are selected) to your clipboard for Google Keyword Planner.
+   - Click the **Delete** button to remove selected rows immediately without page reloads.
 
 ---
 
