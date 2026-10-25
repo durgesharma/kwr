@@ -754,7 +754,8 @@ DASHBOARD_HTML = """
 
             <div class="controls-row">
                 <div class="filter-controls-left">
-                    <select id="filterDateOrder" onchange="applyFilterAndSort()" title="Sort by date">
+                    <select id="filterDateOrder" onchange="applyFilterAndSort()" title="Filter by date">
+                        <option value="all">All</option>
                         <option value="desc" selected>Date: Newest</option>
                         <option value="asc">Date: Oldest</option>
                     </select>
@@ -791,7 +792,8 @@ DASHBOARD_HTML = """
                 </thead>
                 <tbody>
                     {% for r in rows %}
-                    <tr data-keyword="{{ r['Keyword'] | lower }}" 
+                    <tr data-index="{{ loop.index }}"
+                        data-keyword="{{ r['Keyword'] | lower }}" 
                         data-date="{{ r.get('Collection Date', '') }}" 
                         data-words="{{ r.get('Word Count', '1') }}"
                         data-bookmarked="{{ r.get('Bookmarked', '0') }}">
@@ -861,7 +863,9 @@ DASHBOARD_HTML = """
         function toggleDateSort() {
             const sel = document.getElementById("filterDateOrder");
             if (!sel) return;
-            sel.value = (sel.value === "desc") ? "asc" : "desc";
+            if (sel.value === "desc") sel.value = "asc";
+            else if (sel.value === "asc") sel.value = "all";
+            else sel.value = "desc";
             applyFilterAndSort();
         }
 
@@ -1053,7 +1057,7 @@ DASHBOARD_HTML = """
 
         function applyFilterAndSort() {
             const query = document.getElementById("tableFilter").value.toLowerCase();
-            const dateOrder = document.getElementById("filterDateOrder") ? document.getElementById("filterDateOrder").value : "desc";
+            const dateOrder = document.getElementById("filterDateOrder") ? document.getElementById("filterDateOrder").value : "all";
             const minWords = parseInt(document.getElementById("filterWords").value, 10);
             const onlySaved = (currentTab === 'saved');
 
@@ -1078,21 +1082,36 @@ DASHBOARD_HTML = """
                 }
             });
 
-            // Sort rows by Date (Collection Date)
-            rows.sort((a, b) => {
-                const dateA = a.getAttribute("data-date") || "";
-                const dateB = b.getAttribute("data-date") || "";
-                if (dateOrder === "asc") {
+            // Sort rows by Date or preserve original All order
+            if (dateOrder === "asc") {
+                rows.sort((a, b) => {
+                    const dateA = a.getAttribute("data-date") || "";
+                    const dateB = b.getAttribute("data-date") || "";
                     return dateA.localeCompare(dateB);
-                } else {
+                });
+                rows.forEach(tr => tbody.appendChild(tr));
+            } else if (dateOrder === "desc") {
+                rows.sort((a, b) => {
+                    const dateA = a.getAttribute("data-date") || "";
+                    const dateB = b.getAttribute("data-date") || "";
                     return dateB.localeCompare(dateA);
-                }
-            });
-
-            rows.forEach(tr => tbody.appendChild(tr));
+                });
+                rows.forEach(tr => tbody.appendChild(tr));
+            } else if (dateOrder === "all") {
+                rows.sort((a, b) => {
+                    const idxA = parseInt(a.getAttribute("data-index") || "0", 10);
+                    const idxB = parseInt(b.getAttribute("data-index") || "0", 10);
+                    return idxA - idxB;
+                });
+                rows.forEach(tr => tbody.appendChild(tr));
+            }
 
             const arrow = document.getElementById("dateSortArrow");
-            if (arrow) arrow.innerText = (dateOrder === "asc") ? "↑" : "↓";
+            if (arrow) {
+                if (dateOrder === "asc") arrow.innerText = "↑";
+                else if (dateOrder === "desc") arrow.innerText = "↓";
+                else arrow.innerText = "↕";
+            }
 
             document.getElementById("rowCountLabel").innerText = `${visibleCount} rows`;
         }
