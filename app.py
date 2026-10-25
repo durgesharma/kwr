@@ -108,16 +108,26 @@ DASHBOARD_HTML = """
     <title>KWR // Keyword Research</title>
     <style>
         :root {
-            --bg: #0c0e12;
-            --surface: #15181f;
-            --surface-hover: #1c202a;
-            --border: #262b36;
-            --text: #d8dee8;
-            --text-dim: #7d8595;
-            --blue: #3b82f6;
-            --green: #22c55e;
-            --yellow: #eab308;
-            --red: #ef4444;
+            --bg: #16171a;
+            --surface: #1e2025;
+            --surface-hover: #262930;
+            --border: #2c3038;
+            --border-subtle: #24272e;
+            --text: #c0c6cf;
+            --text-dim: #737a87;
+            --text-strong: #e1e5eb;
+            --accent: #2e3540;
+            --accent-hover: #38414f;
+            --btn-harvest: #25382d;
+            --btn-harvest-hover: #2f4538;
+            --text-harvest: #a1c7aa;
+            --star: #a68c4e;
+            --pill-tx-bg: #29241b;
+            --pill-tx-text: #b59b67;
+            --pill-comm-bg: #1c242e;
+            --pill-comm-text: #7b97b0;
+            --pill-info-bg: #1c2720;
+            --pill-info-text: #7ba687;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -148,10 +158,10 @@ DASHBOARD_HTML = """
             flex-wrap: wrap;
         }
         .logo {
-            font-size: 16px;
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: -0.5px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-strong);
+            letter-spacing: -0.3px;
         }
         .sheet-control {
             display: flex;
@@ -166,7 +176,7 @@ DASHBOARD_HTML = """
         .sheet-control select {
             background: transparent;
             border: none;
-            color: var(--blue);
+            color: var(--text-strong);
             font-weight: 600;
             outline: none;
             cursor: pointer;
@@ -183,7 +193,7 @@ DASHBOARD_HTML = """
             font-weight: bold;
             padding: 0 4px;
         }
-        .btn-text:hover { color: #fff; }
+        .btn-text:hover { color: var(--text-strong); }
 
         .topbar-right {
             display: flex;
@@ -194,7 +204,7 @@ DASHBOARD_HTML = """
         .nav-tab {
             text-decoration: none;
             color: var(--text-dim);
-            padding: 6px 11px;
+            padding: 5px 10px;
             border-radius: 4px;
             border: 1px solid var(--border);
             background: var(--surface);
@@ -204,9 +214,9 @@ DASHBOARD_HTML = """
             align-items: center;
             gap: 5px;
         }
-        .nav-tab:hover { background: var(--surface-hover); color: #fff; }
-        .nav-tab.active { border-color: var(--blue); color: var(--blue); }
-        .nav-tab.saved-active { border-color: var(--yellow); color: var(--yellow); }
+        .nav-tab:hover { background: var(--surface-hover); color: var(--text-strong); }
+        .nav-tab.active { border-color: #4a5463; color: var(--text-strong); background: #23272f; }
+        .nav-tab.saved-active { border-color: var(--star); color: var(--star); background: #24221c; }
 
         /* Stats Strip */
         .stats-strip {
@@ -222,7 +232,7 @@ DASHBOARD_HTML = """
             border-radius: 4px;
         }
         .stat-lbl { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.4px; }
-        .stat-num { font-size: 17px; font-weight: 700; color: #fff; margin-top: 2px; }
+        .stat-num { font-size: 16px; font-weight: 700; color: var(--text-strong); margin-top: 2px; }
 
         /* Card panels */
         .card {
@@ -249,24 +259,24 @@ DASHBOARD_HTML = """
             min-width: 170px;
         }
         input[type="text"], select {
-            background: #090a0d;
+            background: #121316;
             border: 1px solid var(--border);
-            color: #fff;
-            padding: 9px 11px;
+            color: var(--text-strong);
+            padding: 8px 11px;
             font-size: 13px;
             border-radius: 4px;
             outline: none;
             width: 100%;
         }
         input[type="text"]:focus, select:focus {
-            border-color: var(--blue);
+            border-color: #485261;
         }
 
         button.btn {
-            background: var(--blue);
-            color: #fff;
-            border: none;
-            padding: 9px 16px;
+            background: var(--accent);
+            color: var(--text-strong);
+            border: 1px solid #3a424f;
+            padding: 8px 15px;
             font-size: 12px;
             font-weight: 600;
             border-radius: 4px;
@@ -275,15 +285,15 @@ DASHBOARD_HTML = """
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            height: 37px;
+            height: 35px;
         }
-        button.btn:hover { filter: brightness(1.12); }
-        button.btn-green { background: #15803d; }
-        button.btn-green:hover { background: #16a34a; }
-        button.btn-danger { background: #b91c1c; }
-        button.btn-danger:hover { background: #dc2626; }
+        button.btn:hover { background: var(--accent-hover); }
+        button.btn-green { background: var(--btn-harvest); border-color: #354d3e; color: var(--text-harvest); }
+        button.btn-green:hover { background: var(--btn-harvest-hover); }
+        button.btn-danger { background: #2b1f1f; border-color: #452b2b; color: #b87b7b; }
+        button.btn-danger:hover { background: #382525; color: #d18a8a; }
         button.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        button.btn-outline:hover { background: var(--surface-hover); color: #fff; }
+        button.btn-outline:hover { background: var(--surface-hover); color: var(--text-strong); }
 
         .options-toggle {
             font-size: 11px;
@@ -293,7 +303,7 @@ DASHBOARD_HTML = """
             display: inline-block;
             user-select: none;
         }
-        .options-toggle:hover { color: var(--blue); }
+        .options-toggle:hover { color: var(--text); }
         .harvest-options {
             display: none;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -307,8 +317,8 @@ DASHBOARD_HTML = """
         /* Progress Banner */
         #progressContainer {
             display: none;
-            background: #111827;
-            border: 1px solid #1e3a8a;
+            background: #171d24;
+            border: 1px solid #283645;
             border-radius: 4px;
             padding: 10px 12px;
             margin-bottom: 14px;
@@ -320,14 +330,14 @@ DASHBOARD_HTML = """
             font-size: 12px;
         }
         .progress-bar-bg {
-            background: #1f2937;
-            height: 6px;
+            background: #1f252e;
+            height: 5px;
             border-radius: 3px;
             overflow: hidden;
             margin: 8px 0;
         }
         .progress-bar-fill {
-            background: var(--green);
+            background: #3f614d;
             height: 100%;
             width: 0%;
             transition: width 0.2s;
@@ -368,7 +378,7 @@ DASHBOARD_HTML = """
             top: 50%;
             transform: translateY(-50%);
             font-size: 11px;
-            color: var(--blue);
+            color: var(--text-dim);
             display: none;
         }
 
@@ -378,7 +388,7 @@ DASHBOARD_HTML = """
             max-height: 62vh;
             border: 1px solid var(--border);
             border-radius: 4px;
-            background: #090a0d;
+            background: #121316;
         }
         table {
             width: 100%;
@@ -387,12 +397,12 @@ DASHBOARD_HTML = """
             text-align: left;
         }
         th, td {
-            padding: 8px 10px;
-            border-bottom: 1px solid #1a1e27;
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border-subtle);
             white-space: nowrap;
         }
         th {
-            background: #12151c;
+            background: #1a1c21;
             color: var(--text-dim);
             font-size: 11px;
             font-weight: 600;
@@ -401,10 +411,10 @@ DASHBOARD_HTML = """
             z-index: 5;
             user-select: none;
         }
-        tr:hover td { background: #131720; }
+        tr:hover td { background: #191b20; }
 
         .kw-cell {
-            color: #fff;
+            color: var(--text-strong);
             font-weight: 600;
             display: flex;
             align-items: center;
@@ -414,24 +424,24 @@ DASHBOARD_HTML = """
             color: var(--text-dim);
             text-decoration: none;
             font-size: 10px;
-            border: 1px solid #2d3340;
+            border: 1px solid var(--border);
             padding: 1px 4px;
             border-radius: 3px;
         }
-        .quick-link:hover { color: var(--blue); border-color: var(--blue); }
+        .quick-link:hover { color: var(--text-strong); border-color: #485261; }
 
         /* Star Button */
         .star-btn {
             background: transparent;
             border: none;
-            color: #4b5563;
-            font-size: 16px;
+            color: #474b54;
+            font-size: 15px;
             cursor: pointer;
             padding: 0 4px;
             line-height: 1;
         }
-        .star-btn:hover { color: var(--yellow); }
-        .star-btn.active { color: var(--yellow); }
+        .star-btn:hover { color: var(--star); }
+        .star-btn.active { color: var(--star); }
 
         /* Subtle Badges */
         .pill {
@@ -441,13 +451,13 @@ DASHBOARD_HTML = """
             font-size: 10px;
             font-weight: 600;
         }
-        .pill-tx { background: rgba(234, 179, 8, 0.15); color: #facc15; }
-        .pill-comm { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-        .pill-info { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .pill-tx { background: var(--pill-tx-bg); color: var(--pill-tx-text); border: 1px solid #3d3423; }
+        .pill-comm { background: var(--pill-comm-bg); color: var(--pill-comm-text); border: 1px solid #283645; }
+        .pill-info { background: var(--pill-info-bg); color: var(--pill-info-text); border: 1px solid #263b2f; }
 
         select.table-select {
-            background: #11141a;
-            border: 1px solid #232833;
+            background: #17181c;
+            border: 1px solid var(--border);
             color: var(--text);
             font-size: 11px;
             padding: 2px 4px;
@@ -460,15 +470,16 @@ DASHBOARD_HTML = """
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #15803d;
-            color: #fff;
-            padding: 9px 15px;
+            background: #25382d;
+            border: 1px solid #354d3e;
+            color: #a1c7aa;
+            padding: 8px 14px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 600;
             display: none;
             z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
         }
 
         /* Responsive Mobile Tweak */
@@ -524,19 +535,19 @@ DASHBOARD_HTML = """
         </div>
         <div class="stat-box">
             <div class="stat-lbl">Saved</div>
-            <div class="stat-num" style="color: var(--yellow);">{{ saved_count }}</div>
+            <div class="stat-num" style="color: var(--star);">{{ saved_count }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-lbl">Transactional</div>
-            <div class="stat-num" style="color: var(--yellow);">{{ tx_count }}</div>
+            <div class="stat-num" style="color: var(--pill-tx-text);">{{ tx_count }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-lbl">Commercial</div>
-            <div class="stat-num" style="color: var(--blue);">{{ comm_count }}</div>
+            <div class="stat-num" style="color: var(--pill-comm-text);">{{ comm_count }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-lbl">Informational</div>
-            <div class="stat-num" style="color: var(--green);">{{ info_count }}</div>
+            <div class="stat-num" style="color: var(--pill-info-text);">{{ info_count }}</div>
         </div>
     </div>
 
