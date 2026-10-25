@@ -7,6 +7,7 @@ from engine import (
     load_all_keywords, execute_harvest, update_row_in_csv, 
     delete_keywords_from_csv, init_csv, CSV_FILE
 )
+from sheets_sync import get_sheets_status, sync_keywords_to_sheet, save_sheets_config
 
 app = Flask(__name__)
 init_csv()
@@ -183,6 +184,20 @@ DASHBOARD_HTML = """
         #toast {
             position: fixed; bottom: 20px; right: 20px; background: #238636; color: #fff; padding: 10px 16px; border-radius: 4px; display: none; z-index: 99; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
+
+        /* Sheets Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100;
+        }
+        .modal-card {
+            background: #181b21; border: 1px solid var(--border); border-radius: 6px; padding: 20px; width: 520px; max-width: 90vw; color: var(--text);
+        }
+        .modal-card h3 { font-size: 14px; margin-bottom: 12px; color: #58a6ff; display: flex; justify-content: space-between; align-items: center; }
+        .modal-card .close-btn { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+        .setup-steps { background: #0d1117; border: 1px solid #30363d; padding: 12px; border-radius: 4px; font-size: 11px; margin-bottom: 14px; color: #8b949e; line-height: 1.5; }
+        .setup-steps ol { padding-left: 18px; }
+        .setup-steps li { margin-bottom: 4px; }
+        .setup-steps code { color: #58a6ff; }
     </style>
 </head>
 <body>
@@ -193,6 +208,7 @@ DASHBOARD_HTML = """
             <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Functional Keyword Miner • Local SEO • Intent Clustering</div>
         </div>
         <div class="nav-links">
+            <button class="btn btn-sm" onclick="openSheetsModal()" style="background: #21262d; border: 1px solid #30363d; color: #58a6ff;">📊 GOOGLE SHEET</button>
             <a href="/export">⬇ EXPORT CSV</a>
             <a href="/guide" target="_blank" class="help-btn" title="How to Use / Field Manual">?</a>
         </div>
@@ -382,6 +398,50 @@ DASHBOARD_HTML = """
         </div>
     </div>
 
+    <!-- GOOGLE SHEETS MODAL -->
+    <div id="sheetsModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>
+                <span>📊 Google Sheets Live Synchronization</span>
+                <button class="close-btn" onclick="closeSheetsModal()">×</button>
+            </h3>
+            
+            <div class="setup-steps">
+                <strong>Quick 3-Step Setup:</strong>
+                <ol>
+                    <li>Download your Google Cloud Service Account JSON key and place it as <code>credentials.json</code> in this project folder.</li>
+                    <li>Create your Google Spreadsheet and click <strong>Share</strong> &rarr; grant <strong>Editor</strong> permission to your Service Account email.</li>
+                    <li>Paste your Google Spreadsheet URL below and click <strong>Save & Sync</strong>.</li>
+                </ol>
+            </div>
+
+            <div id="sheetsStatusBanner" style="font-size: 11px; margin-bottom: 12px; padding: 8px; border-radius: 4px; background: #21262d; border: 1px solid #30363d;">
+                Status: Checking...
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label>Google Spreadsheet URL or Sheet ID</label>
+                <input type="text" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit">
+            </div>
+
+            <div class="adv-row" style="margin-bottom: 15px;">
+                <div class="form-group">
+                    <label>Credentials File</label>
+                    <input type="text" id="sheetCredsInput" value="credentials.json">
+                </div>
+                <div class="form-group">
+                    <label>Worksheet Tab Name</label>
+                    <input type="text" id="sheetTabInput" value="Keywords">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-sm" onclick="closeSheetsModal()" style="background: #21262d;">CANCEL</button>
+                <button class="btn btn-sm btn-green" id="syncBtn" onclick="saveAndSyncSheets()">SYNC TO GOOGLE SHEET</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast">Copied to clipboard!</div>
 
     <script>
@@ -540,6 +600,66 @@ DASHBOARD_HTML = """
             navigator.clipboard.writeText(kws.join("\\n")).then(() => {
                 showToast(`Copied ${kws.length} keywords to clipboard! Ready for Google Keyword Planner.`);
             });
+        }
+
+        async function openSheetsModal() {
+            document.getElementById("sheetsModal").style.display = "flex";
+            const res = await fetch("/api/sheets_status");
+            const st = await res.json();
+            
+            document.getElementById("sheetUrlInput").value = st.sheet_id_or_url || "";
+            document.getElementById("sheetCredsInput").value = st.credentials_path || "credentials.json";
+            document.getElementById("sheetTabInput").value = st.worksheet_name || "Keywords";
+
+            const banner = document.getElementById("sheetsStatusBanner");
+            if (st.credentials_exist) {
+                banner.innerHTML = `<span style="color: #3fb950;">✔ Credentials Found:</span> <code>${st.credentials_path}</code><br><span style="color: #8b949e;">Service Email:</span> <code>${st.client_email || 'Present'}</code>`;
+            } else {
+                banner.innerHTML = `<span style="color: #d29922;">⚠ Missing Credentials:</span> Place <code>${st.credentials_path}</code> in the root folder.`;
+            }
+        }
+
+        function closeSheetsModal() {
+            document.getElementById("sheetsModal").style.display = "none";
+        }
+
+        async function saveAndSyncSheets() {
+            const sheetUrl = document.getElementById("sheetUrlInput").value.trim();
+            const credsPath = document.getElementById("sheetCredsInput").value.trim();
+            const tabName = document.getElementById("sheetTabInput").value.trim();
+
+            if (!sheetUrl) {
+                alert("Please enter a Google Spreadsheet URL or ID.");
+                return;
+            }
+
+            const syncBtn = document.getElementById("syncBtn");
+            syncBtn.disabled = true;
+            syncBtn.innerText = "Syncing...";
+
+            try {
+                const res = await fetch("/api/sheets_sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        sheet_id_or_url: sheetUrl,
+                        credentials_path: credsPath,
+                        worksheet_name: tabName
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    closeSheetsModal();
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert("Sync failed: " + err);
+            } finally {
+                syncBtn.disabled = false;
+                syncBtn.innerText = "SYNC TO GOOGLE SHEET";
+            }
         }
     </script>
 </body>
@@ -969,6 +1089,20 @@ def export_csv():
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment;filename=keywords_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
     )
+
+@app.route("/api/sheets_status")
+def api_sheets_status():
+    return jsonify(get_sheets_status())
+
+@app.route("/api/sheets_sync", methods=["POST"])
+def api_sheets_sync():
+    data = request.get_json() or {}
+    sheet_url = data.get("sheet_id_or_url")
+    creds_path = data.get("credentials_path")
+    worksheet_name = data.get("worksheet_name", "Keywords")
+    
+    res = sync_keywords_to_sheet(sheet_url, creds_path, worksheet_name)
+    return jsonify(res)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
