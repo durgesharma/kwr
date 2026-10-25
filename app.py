@@ -195,24 +195,28 @@ DASHBOARD_HTML = """
         }
         .btn-text:hover { color: var(--text-strong); }
 
-        .topbar-row {
+        .topbar-main {
             display: flex;
             align-items: center;
             gap: 8px;
-            justify-content: space-between;
         }
         .topbar-tabs {
             display: flex;
             align-items: center;
             gap: 6px;
         }
+        .desktop-help { display: inline-flex; }
+        .mobile-help { display: none; }
+
+        /* Box-matching Question Mark Button */
         .help-btn {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            border: 1px solid #3c4452;
-            background: #1e2229;
-            color: #d1d5db;
+            height: 28px;
+            min-width: 28px;
+            padding: 0 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-dim);
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -221,12 +225,12 @@ DASHBOARD_HTML = """
             text-decoration: none;
             flex-shrink: 0;
             cursor: pointer;
-            line-height: 1;
+            transition: all 0.15s ease;
         }
         .help-btn:hover {
-            background: #2b313b;
-            border-color: #60a5fa;
-            color: #ffffff;
+            background: var(--surface-hover);
+            color: var(--text-strong);
+            border-color: #4a5463;
         }
         .nav-tab {
             text-decoration: none;
@@ -380,23 +384,10 @@ DASHBOARD_HTML = """
             gap: 8px;
             margin-bottom: 10px;
         }
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-            flex: 1;
-        }
-        .actions-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
         .search-wrap {
             position: relative;
             min-width: 200px;
-            max-width: 280px;
+            max-width: 260px;
             flex: 1;
         }
         .search-wrap input { padding-right: 60px; }
@@ -408,6 +399,33 @@ DASHBOARD_HTML = """
             font-size: 11px;
             color: var(--text-dim);
             display: none;
+        }
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex: 2;
+        }
+        .filter-controls-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-controls-left select {
+            width: auto;
+            min-width: 105px;
+        }
+        .actions-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .row-count-badge {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-left: 2px;
+            white-space: nowrap;
         }
 
         /* Table Design */
@@ -522,17 +540,104 @@ DASHBOARD_HTML = """
 
         /* Responsive Mobile Tweak */
         @media (max-width: 768px) {
-            body { padding: 8px; font-size: 12px; }
-            .topbar { flex-direction: column; align-items: stretch; gap: 8px; }
-            .topbar-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-            .topbar-tabs { width: 100%; display: flex; justify-content: flex-start; gap: 6px; }
-            .sheet-control select { max-width: 130px; }
-            .harvest-main { flex-direction: column; align-items: stretch; }
+            body { padding: 6px; font-size: 12px; }
+            .desktop-help { display: none !important; }
+            .mobile-help { display: inline-flex !important; }
+
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+                padding-bottom: 8px;
+                margin-bottom: 8px;
+            }
+            .topbar-main {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 4px;
+            }
+            .topbar-left {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                min-width: 0;
+            }
+            .sheet-control {
+                padding: 3px 6px;
+                gap: 3px;
+            }
+            .sheet-control select {
+                max-width: 120px;
+                font-size: 11px;
+            }
+            .help-btn {
+                height: 26px;
+                min-width: 26px;
+                padding: 0 6px;
+                font-size: 12px;
+            }
+            .topbar-tabs {
+                width: 100%;
+                display: flex;
+                justify-content: flex-start;
+                gap: 4px;
+            }
+            .nav-tab {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            .harvest-main { flex-direction: column; align-items: stretch; gap: 6px; }
             .harvest-main input, .harvest-main select, .harvest-main button { width: 100%; }
-            .filter-row { flex-direction: column; align-items: stretch; }
-            .search-wrap { max-width: 100%; }
-            .filter-group, .actions-group { width: 100%; justify-content: space-between; }
-            .stats-strip { grid-template-columns: repeat(2, 1fr); }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .search-wrap {
+                width: 100%;
+                max-width: 100%;
+            }
+            .controls-row {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 4px;
+            }
+            .filter-controls-left {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            .filter-controls-left select {
+                font-size: 11px;
+                padding: 3px 5px;
+                min-width: 80px;
+                max-width: 95px;
+                height: 29px;
+            }
+            .actions-right {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            .actions-right .btn {
+                height: 29px;
+                padding: 2px 7px;
+                font-size: 11px;
+            }
+            .row-count-badge {
+                font-size: 10px;
+                color: var(--text-dim);
+                white-space: nowrap;
+            }
+            .stats-strip { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px; }
         }
     </style>
 </head>
@@ -540,7 +645,7 @@ DASHBOARD_HTML = """
 
     <!-- TOP BAR -->
     <div class="topbar">
-        <div class="topbar-row">
+        <div class="topbar-main">
             <div class="topbar-left">
                 <span class="logo">KWR</span>
                 
@@ -556,8 +661,8 @@ DASHBOARD_HTML = """
                 </div>
             </div>
 
-            <!-- Question mark button directly in top bar (prominent and easily accessible on phone) -->
-            <a href="/guide" target="_blank" class="help-btn" title="How to use manual">?</a>
+            <!-- On phone: Question mark box button sits in top header row with KWR and sheet switcher -->
+            <a href="/guide" target="_blank" class="help-btn mobile-help" title="How to use manual">?</a>
         </div>
 
         <div class="topbar-tabs">
@@ -567,6 +672,8 @@ DASHBOARD_HTML = """
                 Saved (<span id="countSaved">{{ saved_count }}</span>)
             </button>
             <a href="/export" class="nav-tab" title="Download CSV"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
+            <!-- On bigger devices: Question mark box button sits at end of tabs row -->
+            <a href="/guide" target="_blank" class="help-btn desktop-help" title="How to use manual">?</a>
         </div>
     </div>
 
@@ -640,29 +747,31 @@ DASHBOARD_HTML = """
     <!-- FILTER & TABLE BAR -->
     <div class="card" style="padding: 10px;">
         <div class="filter-row">
-            <div class="filter-group">
-                <div class="search-wrap">
-                    <input type="text" id="tableFilter" placeholder="Filter keywords..." oninput="triggerFilterLoading()">
-                    <span class="search-indicator" id="searchLoading">filtering...</span>
-                </div>
-
-                <select id="filterDateOrder" onchange="applyFilterAndSort()" style="width: 145px;" title="Sort by date">
-                    <option value="desc" selected>Date: Newest First</option>
-                    <option value="asc">Date: Oldest First</option>
-                </select>
-
-                <select id="filterWords" onchange="applyFilterAndSort()" style="width: 105px;">
-                    <option value="0">All Lengths</option>
-                    <option value="3">3+ Words</option>
-                    <option value="4">4+ Words</option>
-                    <option value="5">5+ Words</option>
-                </select>
+            <div class="search-wrap">
+                <input type="text" id="tableFilter" placeholder="Filter keywords..." oninput="triggerFilterLoading()">
+                <span class="search-indicator" id="searchLoading">filtering...</span>
             </div>
 
-            <div class="actions-group">
-                <button class="btn btn-outline" style="height: 33px; font-size: 11px;" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy List</button>
-                <button class="btn btn-danger" style="height: 33px; font-size: 11px;" onclick="deleteSelected()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
-                <span id="rowCountLabel" style="font-size: 11px; color: var(--text-dim); margin-left: 4px;">{{ total_count }} rows</span>
+            <div class="controls-row">
+                <div class="filter-controls-left">
+                    <select id="filterDateOrder" onchange="applyFilterAndSort()" title="Sort by date">
+                        <option value="desc" selected>Date: Newest</option>
+                        <option value="asc">Date: Oldest</option>
+                    </select>
+
+                    <select id="filterWords" onchange="applyFilterAndSort()">
+                        <option value="0">All Words</option>
+                        <option value="3">3+ Words</option>
+                        <option value="4">4+ Words</option>
+                        <option value="5">5+ Words</option>
+                    </select>
+                </div>
+
+                <div class="actions-right">
+                    <button class="btn btn-outline" style="height: 33px; font-size: 11px;" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
+                    <button class="btn btn-danger" style="height: 33px; font-size: 11px;" onclick="deleteSelected()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Del</button>
+                    <span id="rowCountLabel" class="row-count-badge">{{ total_count }} rows</span>
+                </div>
             </div>
         </div>
 
