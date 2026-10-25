@@ -26,53 +26,102 @@ BANNER = r"""
 """
 
 HELP_TEXT = """
-[1] QUICK START (Friction-Free Setup):
+[1] ZERO-FRICTION SETUP (First Time Users):
   Step 1: Install required dependencies
           pip install -r requirements.txt
+          (or run: python kwr.py setup)
 
   Step 2: Launch the interactive web dashboard
           python kwr.py start
-          (or run: python app.py)
+          (Windows: double-click start.bat | Mac/Linux: ./start.sh)
           Open in browser: http://127.0.0.1:5000
 
-[2] COMMAND-LINE OPERATIONS:
-  python kwr.py help               Show this complete command guide
-  python kwr.py check              Verify python dependencies & configuration
+[2] TERMINAL COMMANDS:
+  python kwr.py help               Show this setup and user guide
+  python kwr.py setup              Auto-check and install any missing packages
+  python kwr.py check              Verify dependencies without installing
   python kwr.py start              Start the web dashboard on port 5000
-  python kwr.py harvest "<seed>"   Run keyword expansion from terminal
+  python kwr.py harvest "<seed>"   Run keyword research directly in terminal
   python kwr.py sync-sheets        Sync local keywords into your Google Sheet
 
-[3] KEYWORD HARVEST MODES:
-  --mode az_suffix      Alphabet Soup Suffix: [seed] + a..z (Default)
-  --mode az_prefix      Alphabet Soup Prefix: a..z + [seed]
-  --mode commercial     Commercial Buyer Intent: price, cost, contractor
+[3] SEARCH MODES:
+  --mode az_suffix      All Variations: [seed] + a..z (Default)
   --mode questions      Questions: how, what, why, which, can
-  --mode numbers        Numbers: [seed] + 0..9 (sizes, dimensions, 2bhk)
-  --mode deep_harvest   Full Deep Harvest (Runs all above modes)
+  --mode commercial     Buying Intent: cost, price, near me, best
+  --mode deep_harvest   Deep Scan: combines all angles & methods
+  --mode standard       Quick Search: top direct suggestions
 
-  Example:
-    python kwr.py harvest "marketing tools" --mode commercial
+  Examples:
+    python kwr.py harvest "marketing tools"
+    python kwr.py harvest "interior designer" --mode commercial --loc "Mumbai"
+    python kwr.py harvest "solar panel" --mode questions
 
-[4] GOOGLE SHEETS SETUP (Optional):
-  To automatically sync keywords to your own Google Sheet:
-  1. Go to Google Cloud Console (https://console.cloud.google.com).
+[4] CONNECTING YOUR GOOGLE SHEET (Optional):
+  To automatically sync discovered keywords to your personal Google Sheet:
+  1. Open Google Cloud Console (https://console.cloud.google.com).
   2. Create a project and enable 'Google Sheets API' & 'Google Drive API'.
-  3. Create a Service Account and download the JSON key.
-  4. Rename the key to 'credentials.json' and place it in this folder.
-  5. Create a new Google Spreadsheet and click 'Share' -> paste your Service
-     Account email with 'Editor' permissions.
-  6. In the web dashboard, click '[Sync Google Sheet]' or run:
+  3. Create a Service Account, generate a JSON key, and save it here as:
+     credentials.json
+  4. Create a new Google Spreadsheet in Google Drive, click 'Share', and paste
+     the Service Account email with 'Editor' permissions.
+  5. Run sync anytime:
      python kwr.py sync-sheets --url "<YOUR_GOOGLE_SHEET_URL>"
 
 [5] FILES & STORAGE:
-  smartwood_keywords.csv   Local keyword database
+  smartwood_keywords.csv   Local keyword database (no setup required)
   requirements.txt         Python package list
-  credentials.json         Your Google Cloud Service Account key (optional)
+  credentials.json         Google Cloud Service Account key (optional)
   sheets_config.json       Saved Google Sheet settings (auto-generated)
 """
 
 def print_banner():
     print(BANNER)
+
+def cmd_setup():
+    print_banner()
+    print("[*] Running Automatic Setup & Health Check...\n")
+    python_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    print(f"  Python Version: {python_ver} (Minimum required: 3.8)")
+
+    packages = {
+        "flask": "Flask (Web Dashboard)",
+        "requests": "Requests (Autocomplete HTTP Client)",
+        "gspread": "gspread (Google Sheets Sync)",
+        "google.oauth2": "google-auth (Google Cloud Authentication)"
+    }
+
+    missing = []
+    for mod, desc in packages.items():
+        try:
+            __import__(mod)
+            print(f"  [OK] {desc:<45} : Installed")
+        except ImportError:
+            print(f"  [!]  {desc:<45} : MISSING")
+            missing.append(mod)
+
+    if missing:
+        print("\n[*] Installing missing dependencies from requirements.txt...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+            print("[OK] Dependencies installed successfully!")
+        except Exception as e:
+            print(f"[!] Pip install error: {e}")
+            print("    Please run manually: pip install -r requirements.txt")
+
+    try:
+        from engine import init_csv, get_active_sheet
+        active = get_active_sheet()
+        init_csv(active)
+        print(f"  [OK] Local keyword database initialized     : {active}")
+    except Exception as e:
+        print(f"  [!]  Database init note: {e}")
+
+    print("\n" + ("=" * 70))
+    print("[OK] KWR IS READY TO USE!")
+    print("     To launch: python kwr.py start")
+    print("     (Windows: double-click start.bat | Mac/Linux: ./start.sh)")
+    print("     Open http://127.0.0.1:5000 in your browser.")
+    print("=" * 70)
 
 def cmd_check():
     print_banner()
@@ -203,7 +252,9 @@ def main():
 
     if action in ("start", "run", "serve"):
         cmd_start()
-    elif action in ("check", "setup", "doctor"):
+    elif action in ("setup", "init", "install"):
+        cmd_setup()
+    elif action in ("check", "doctor", "health"):
         cmd_check()
     elif action in ("harvest", "find", "scrape"):
         cmd_harvest(rest)
