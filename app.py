@@ -421,10 +421,30 @@ DASHBOARD_HTML = """
             align-items: center;
             gap: 6px;
         }
-        .row-count-badge {
+        .icon-btn {
+            height: 30px;
+            width: 30px;
+            min-width: 30px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .table-info-line {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-top: 6px;
+            margin-top: 8px;
+            margin-bottom: 6px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .row-count-text {
             font-size: 11px;
             color: var(--text-dim);
-            margin-left: 2px;
             white-space: nowrap;
         }
 
@@ -627,13 +647,23 @@ DASHBOARD_HTML = """
                 gap: 4px;
                 flex-shrink: 0;
             }
-            .actions-right .btn {
+            .actions-right .icon-btn {
                 height: 29px;
-                padding: 2px 7px;
-                font-size: 11px;
+                width: 29px;
+                min-width: 29px;
+                padding: 0;
             }
-            .row-count-badge {
-                font-size: 10px;
+            .table-info-line {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                padding-top: 5px;
+                margin-top: 6px;
+                margin-bottom: 6px;
+                border-top: 1px solid var(--border-subtle);
+            }
+            .row-count-text {
+                font-size: 11px;
                 color: var(--text-dim);
                 white-space: nowrap;
             }
@@ -769,11 +799,15 @@ DASHBOARD_HTML = """
                 </div>
 
                 <div class="actions-right">
-                    <button class="btn btn-outline" style="height: 33px; font-size: 11px;" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
-                    <button class="btn btn-danger" style="height: 33px; font-size: 11px;" onclick="deleteSelected()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Del</button>
-                    <span id="rowCountLabel" class="row-count-badge">{{ total_count }} rows</span>
+                    <button type="button" class="btn btn-outline icon-btn" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                    <button type="button" class="btn btn-danger icon-btn" onclick="deleteSelected()" title="Delete selected keywords"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                 </div>
             </div>
+        </div>
+
+        <!-- Horizontal line with number of rows on the right -->
+        <div class="table-info-line">
+            <span id="rowCountLabel" class="row-count-text">{{ total_count }} rows</span>
         </div>
 
         <div class="table-wrap">
