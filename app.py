@@ -542,6 +542,42 @@ DASHBOARD_HTML = """
             content-visibility: auto;
             contain-intrinsic-size: auto 35px;
         }
+        #keywordsTable tbody tr.empty-row {
+            content-visibility: visible;
+        }
+        tr.empty-row:hover td {
+            background: transparent !important;
+        }
+        .empty-row td {
+            padding: 56px 16px;
+            text-align: center;
+            border-bottom: none;
+            background: transparent !important;
+        }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .empty-icon {
+            color: var(--text-dim);
+            opacity: 0.55;
+            margin-bottom: 4px;
+        }
+        .empty-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+        .empty-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            max-width: 280px;
+            line-height: 1.4;
+        }
         #keywordsTable tbody tr.row-selected td {
             background: #1b222c;
         }
@@ -934,6 +970,18 @@ DASHBOARD_HTML = """
                     </tr>
                 </thead>
                 <tbody>
+                    <tr id="emptyRow" class="empty-row" style="display: {% if rows %}none{% else %}table-row{% endif %};">
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <svg class="empty-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="7"></circle>
+                                    <line x1="21" y1="21" x2="16" y2="16"></line>
+                                </svg>
+                                <div class="empty-title" id="emptyTitle">No keywords</div>
+                                <div class="empty-desc" id="emptyDesc">Enter a seed keyword above and tap Harvest to begin.</div>
+                            </div>
+                        </td>
+                    </tr>
                     {% for r in rows %}
                     <tr data-index="{{ loop.index }}"
                         data-keyword="{{ r['Keyword'] | lower }}" 
@@ -1002,6 +1050,7 @@ DASHBOARD_HTML = """
             rowMapByTr.clear();
             for (let i = 0; i < trs.length; i++) {
                 const tr = trs[i];
+                if (tr.id === "emptyRow") continue;
                 const cb = tr.querySelector(".row-select");
                 const rawKw = cb ? cb.value : (tr.querySelector(".kw-cell span") ? tr.querySelector(".kw-cell span").textContent.trim() : "");
                 const item = {
@@ -1070,6 +1119,23 @@ DASHBOARD_HTML = """
             if (selectAll) {
                 selectAll.checked = (visibleCount > 0 && selectedCount === visibleCount);
                 selectAll.indeterminate = (selectedCount > 0 && selectedCount < visibleCount);
+            }
+
+            const emptyRow = document.getElementById("emptyRow");
+            const emptyTitle = document.getElementById("emptyTitle");
+            const emptyDesc = document.getElementById("emptyDesc");
+            if (emptyRow) {
+                if (rowItems.length === 0) {
+                    emptyRow.style.display = "";
+                    if (emptyTitle) emptyTitle.textContent = "No keywords";
+                    if (emptyDesc) emptyDesc.textContent = "Enter a seed keyword above and tap Harvest to begin.";
+                } else if (visibleCount === 0) {
+                    emptyRow.style.display = "";
+                    if (emptyTitle) emptyTitle.textContent = "No keywords match filter";
+                    if (emptyDesc) emptyDesc.textContent = "Try clearing your search filter or switching tabs.";
+                } else {
+                    emptyRow.style.display = "none";
+                }
             }
         }
 
@@ -1411,6 +1477,10 @@ DASHBOARD_HTML = """
                 const frag = document.createDocumentFragment();
                 for (let i = 0; i < rowItems.length; i++) {
                     frag.appendChild(rowItems[i].tr);
+                }
+                const emptyRow = document.getElementById("emptyRow");
+                if (emptyRow) {
+                    frag.appendChild(emptyRow);
                 }
                 tbody.appendChild(frag);
                 lastSortedOrder = dateOrder;
