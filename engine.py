@@ -12,8 +12,7 @@ ACTIVE_SHEET_FILE = "active_sheet.txt"
 csv_lock = Lock()
 
 COLUMNS = [
-    "Keyword", "Source", "Discovered From", "Collection Date", 
-    "Search Intent", "Topic Cluster", "Location", 
+    "Keyword", "Collection Date", "Location", 
     "Word Count", "Validation Status", "Priority", "Target Page", "Bookmarked"
 ]
 
@@ -430,18 +429,12 @@ def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None,
             if has_negative:
                 continue
 
-            intent = classify_intent(clean_sug)
-            cluster = detect_cluster(clean_sug, seed)
             word_count = len(clean_sug.split())
             loc_str = ", ".join(locations) if locations else "General"
 
             new_row = [
                 clean_sug,
-                "Google Autocomplete",
-                query,
                 now_str,
-                intent,
-                cluster,
                 loc_str,
                 word_count,
                 "Unverified",

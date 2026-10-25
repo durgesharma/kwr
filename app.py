@@ -195,11 +195,38 @@ DASHBOARD_HTML = """
         }
         .btn-text:hover { color: var(--text-strong); }
 
-        .topbar-right {
+        .topbar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+        .topbar-tabs {
             display: flex;
             align-items: center;
             gap: 6px;
-            flex-wrap: wrap;
+        }
+        .help-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid #3c4452;
+            background: #1e2229;
+            color: #d1d5db;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            flex-shrink: 0;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .help-btn:hover {
+            background: #2b313b;
+            border-color: #60a5fa;
+            color: #ffffff;
         }
         .nav-tab {
             text-decoration: none;
@@ -496,6 +523,10 @@ DASHBOARD_HTML = """
         /* Responsive Mobile Tweak */
         @media (max-width: 768px) {
             body { padding: 8px; font-size: 12px; }
+            .topbar { flex-direction: column; align-items: stretch; gap: 8px; }
+            .topbar-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+            .topbar-tabs { width: 100%; display: flex; justify-content: flex-start; gap: 6px; }
+            .sheet-control select { max-width: 130px; }
             .harvest-main { flex-direction: column; align-items: stretch; }
             .harvest-main input, .harvest-main select, .harvest-main button { width: 100%; }
             .filter-row { flex-direction: column; align-items: stretch; }
@@ -509,29 +540,33 @@ DASHBOARD_HTML = """
 
     <!-- TOP BAR -->
     <div class="topbar">
-        <div class="topbar-left">
-            <span class="logo">KWR</span>
-            
-            <!-- Quick inline sheet switcher -->
-            <div class="sheet-control">
-                <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <select id="sheetSelect" onchange="switchSheet(this.value)">
-                    {% for s in available_sheets %}
-                    <option value="{{ s }}" {% if s == active_sheet %}selected{% endif %}>{{ s }}</option>
-                    {% endfor %}
-                </select>
-                <button class="btn-text" onclick="promptNewSheet()" title="Create new sheet on device">+</button>
+        <div class="topbar-row">
+            <div class="topbar-left">
+                <span class="logo">KWR</span>
+                
+                <!-- Quick inline sheet switcher -->
+                <div class="sheet-control">
+                    <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <select id="sheetSelect" onchange="switchSheet(this.value)">
+                        {% for s in available_sheets %}
+                        <option value="{{ s }}" {% if s == active_sheet %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn-text" onclick="promptNewSheet()" title="Create new sheet on device">+</button>
+                </div>
             </div>
+
+            <!-- Question mark button directly in top bar (prominent and easily accessible on phone) -->
+            <a href="/guide" target="_blank" class="help-btn" title="How to use manual">?</a>
         </div>
 
-        <div class="topbar-right">
+        <div class="topbar-tabs">
             <button type="button" class="nav-tab active" id="tabAll" onclick="setViewTab('all')">All (<span id="countAll">{{ all_total_count }}</span>)</button>
             <button type="button" class="nav-tab" id="tabSaved" onclick="setViewTab('saved')">
                 <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 Saved (<span id="countSaved">{{ saved_count }}</span>)
             </button>
             <a href="/export" class="nav-tab" title="Download CSV"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
-            <a href="/guide" target="_blank" class="nav-tab" title="How to use manual"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></a>
         </div>
     </div>
 
@@ -611,14 +646,12 @@ DASHBOARD_HTML = """
                     <span class="search-indicator" id="searchLoading">filtering...</span>
                 </div>
 
-                <select id="filterCluster" onchange="applyFilter()" style="width: 140px;">
-                    <option value="">All Clusters</option>
-                    {% for c in clusters %}
-                    <option value="{{ c }}">{{ c }}</option>
-                    {% endfor %}
+                <select id="filterDateOrder" onchange="applyFilterAndSort()" style="width: 145px;" title="Sort by date">
+                    <option value="desc" selected>Date: Newest First</option>
+                    <option value="asc">Date: Oldest First</option>
                 </select>
 
-                <select id="filterWords" onchange="applyFilter()" style="width: 110px;">
+                <select id="filterWords" onchange="applyFilterAndSort()" style="width: 105px;">
                     <option value="0">All Lengths</option>
                     <option value="3">3+ Words</option>
                     <option value="4">4+ Words</option>
@@ -640,8 +673,7 @@ DASHBOARD_HTML = """
                         <th style="width: 24px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
                         <th style="width: 32px;" title="Bookmark"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></th>
                         <th>KEYWORD</th>
-                        <th>CLUSTER</th>
-                        <th>SOURCE</th>
+                        <th onclick="toggleDateSort()" style="cursor: pointer;" title="Click to sort by date">DATE <span id="dateSortArrow">↓</span></th>
                         <th>WORDS</th>
                         <th>PRIORITY</th>
                         <th>STATUS</th>
@@ -651,7 +683,7 @@ DASHBOARD_HTML = """
                 <tbody>
                     {% for r in rows %}
                     <tr data-keyword="{{ r['Keyword'] | lower }}" 
-                        data-cluster="{{ r.get('Topic Cluster', '') }}" 
+                        data-date="{{ r.get('Collection Date', '') }}" 
                         data-words="{{ r.get('Word Count', '1') }}"
                         data-bookmarked="{{ r.get('Bookmarked', '0') }}">
                         <td><input type="checkbox" class="row-select" value="{{ r['Keyword'] }}"></td>
@@ -672,8 +704,7 @@ DASHBOARD_HTML = """
                                 </span>
                             </div>
                         </td>
-                        <td style="color: var(--text-dim);">{{ r.get('Topic Cluster', '-') }}</td>
-                        <td style="color: #64748b; font-size: 11px;">{{ r.get('Discovered From', '-') }}</td>
+                        <td style="color: var(--text-dim); font-size: 11px;">{{ r.get('Collection Date', '-') }}</td>
                         <td>{{ r.get('Word Count', '-') }}</td>
                         <td>
                             <select class="table-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Priority', this.value)">
@@ -718,6 +749,13 @@ DASHBOARD_HTML = """
             el.style.display = (el.style.display === "grid") ? "none" : "grid";
         }
 
+        function toggleDateSort() {
+            const sel = document.getElementById("filterDateOrder");
+            if (!sel) return;
+            sel.value = (sel.value === "desc") ? "asc" : "desc";
+            applyFilterAndSort();
+        }
+
         function setViewTab(tab) {
             currentTab = tab;
             const tabAll = document.getElementById("tabAll");
@@ -731,7 +769,7 @@ DASHBOARD_HTML = """
                     tabSaved.classList.remove("saved-active");
                 }
             }
-            applyFilter();
+            applyFilterAndSort();
         }
 
         async function switchSheet(sheetName) {
@@ -802,7 +840,7 @@ DASHBOARD_HTML = """
             loader.style.display = "inline";
             if (filterDebounce) clearTimeout(filterDebounce);
             filterDebounce = setTimeout(() => {
-                applyFilter();
+                applyFilterAndSort();
                 loader.style.display = "none";
             }, 60);
         }
@@ -904,33 +942,48 @@ DASHBOARD_HTML = """
             });
         }
 
-        function applyFilter() {
+        function applyFilterAndSort() {
             const query = document.getElementById("tableFilter").value.toLowerCase();
-            const cluster = document.getElementById("filterCluster").value;
+            const dateOrder = document.getElementById("filterDateOrder") ? document.getElementById("filterDateOrder").value : "desc";
             const minWords = parseInt(document.getElementById("filterWords").value, 10);
             const onlySaved = (currentTab === 'saved');
 
-            const rows = document.querySelectorAll("#keywordsTable tbody tr");
+            const tbody = document.querySelector("#keywordsTable tbody");
+            const rows = Array.from(tbody.querySelectorAll("tr"));
             let visibleCount = 0;
 
             rows.forEach(tr => {
                 const kw = tr.getAttribute("data-keyword") || "";
-                const rowCluster = tr.getAttribute("data-cluster") || "";
                 const words = parseInt(tr.getAttribute("data-words") || "0", 10);
                 const isBookmarked = tr.getAttribute("data-bookmarked") === "1";
 
                 const matchQ = !query || kw.includes(query);
-                const matchCluster = !cluster || rowCluster === cluster;
                 const matchWords = isNaN(minWords) || minWords === 0 || words >= minWords;
                 const matchSaved = !onlySaved || isBookmarked;
 
-                if (matchQ && matchCluster && matchWords && matchSaved) {
+                if (matchQ && matchWords && matchSaved) {
                     tr.style.display = "";
                     visibleCount++;
                 } else {
                     tr.style.display = "none";
                 }
             });
+
+            // Sort rows by Date (Collection Date)
+            rows.sort((a, b) => {
+                const dateA = a.getAttribute("data-date") || "";
+                const dateB = b.getAttribute("data-date") || "";
+                if (dateOrder === "asc") {
+                    return dateA.localeCompare(dateB);
+                } else {
+                    return dateB.localeCompare(dateA);
+                }
+            });
+
+            rows.forEach(tr => tbody.appendChild(tr));
+
+            const arrow = document.getElementById("dateSortArrow");
+            if (arrow) arrow.innerText = (dateOrder === "asc") ? "↑" : "↓";
 
             document.getElementById("rowCountLabel").innerText = `${visibleCount} rows`;
         }
