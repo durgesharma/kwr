@@ -1,13 +1,45 @@
 # kwr - Keyword Research & Discovery Intelligence Engine
 
-Automated Google Autocomplete keyword expansion, search intent classification, and Google Sheets synchronization.
+Automated Google Autocomplete keyword expansion, real-time discovery intelligence, and streamlined keyword management for desktop, mobile, and Termux.
+
+---
+
+## Key Features & Highlights
+
+- **Streamlined Discovery Modes**:
+  - `Standard A-Z`: Complete alphabet soup expansion (`seed + a..z`).
+  - `Questions & Needs`: High-intent queries using interrogative modifiers (`how`, `why`, `what`, `best`, `near me`).
+  - `Deep Discovery`: Comprehensive recursive multi-pass crawl for finding low-competition long-tail keywords.
+- **Mobile-First & Desktop Ergonomics**:
+  - Re-architected 3-tier top layout designed specifically for phones and tablets.
+  - Dedicated full-width Sheet Switcher with one-tap `[+] New` sheet creation (no truncated file names).
+  - Clean brand header with quick-access `[?] Guide` field manual.
+- **Unified Interactive Metric Strip**:
+  - **Keywords Card**: Displays total count and toggles full keyword list.
+  - **Saved Card**: Displays starred count and filters instantly to bookmarked keywords with zero page reloads.
+  - **Export Card**: One-tap direct CSV export.
+- **Clean, Distraction-Free Keyword Table**:
+  - Zero clutter: Focuses on core data (`KEYWORD`, `DATE`, `BOOKMARK`, `ACTIONS`) without redundant columns.
+  - **Date Ordering**: Sort instantly by `All` (natural sheet order), `Date: Newest`, or `Date: Oldest`.
+  - **Word Length Filtering**: Filter by length (`2+ Words`, `3+ Words`, `4+ Words`, etc.) to isolate long-tail queries.
+  - **Real-Time Search**: Instant live keyword filtering as you type.
+  - **Compact Phone Action Bar**: Left-aligned date/word controls with right-aligned icon-only Copy and Delete buttons.
+  - Dynamic status bar showing live matching row counts (`Showing X of Y rows`).
+- **Minimalist Aesthetic**:
+  - Soft, eye-friendly desaturated dark matte theme to eliminate glare and eye strain.
+  - Clean, crisp SVG vector icons replacing all emojis across the entire UI.
+- **Multi-Sheet Management**:
+  - Organize keyword campaigns into isolated local CSV sheets (e.g. `smartwood_keywords.csv`, `real_estate.csv`).
+  - Create and switch sheets seamlessly right from the web dashboard.
+- **Google Sheets Cloud Sync (Optional)**:
+  - 1-click or CLI synchronization to push local keyword sheets directly to Google Sheets using a Google Service Account.
 
 ---
 
 ## Zero-Friction Quick Start
 
 ### 1. One-Click Launch (Recommended)
-- **Windows**: Double-click **`start.bat`** (or type `kwr start`).
+- **Windows**: Double-click **`start.bat`** (or run `python kwr.py start`).
 - **Linux / macOS / Termux**: Run **`chmod +x start.sh && ./start.sh`**.
 
 *This automatically checks and installs dependencies, then launches the local dashboard at `http://127.0.0.1:5000`.*
@@ -33,6 +65,24 @@ Open **`http://127.0.0.1:5000`** in your browser.
 
 ---
 
+## Web Command Center Walkthrough
+
+1. **Header & Field Manual**:
+   - Tap the **`[?] Guide`** button in the top right to view the built-in manual and operational guide at `/guide`.
+2. **Sheet Management**:
+   - Use the Sheet dropdown to switch between projects or tap **`+ New`** to create a new campaign sheet instantly on your device.
+3. **Interactive Metric Cards**:
+   - Tap **Keywords** to view all discovered terms.
+   - Tap **Saved** to focus only on starred high-priority keywords.
+   - Tap **Export CSV** to download the active sheet.
+4. **Keyword Harvester**:
+   - Enter a seed term (e.g., `interior designer`), choose a discovery mode, optionally enter target cities or suffixes, and click **Harvest**.
+5. **Filtering & Bulk Actions**:
+   - Filter by date (`All`, `Newest`, `Oldest`), word count, or search text.
+   - Select multiple rows with checkboxes, then use the bottom action bar to copy selected keywords or delete them in bulk.
+
+---
+
 ## CLI Operations & kwr help
 
 Run the built-in CLI assistant anytime for instructions and diagnostics:
@@ -51,10 +101,10 @@ python kwr.py help
 
 ### Terminal Harvest Examples:
 ```bash
-# Alphabet Soup A-Z scan
+# Standard Alphabet Soup A-Z scan
 python kwr.py harvest "modular kitchen" --mode az_suffix
 
-# Commercial Buyer-Intent scan with geo-targeting
+# Questions & Needs scan with geo-targeting
 python kwr.py harvest "interior designer" --mode commercial --loc "Navi Mumbai, Thane"
 
 # Full deep harvest
@@ -85,4 +135,4 @@ You can sync discovered keywords directly to your own Google Sheet alongside the
 ---
 
 ## Built-in Field Manual
-Click the **`?`** icon in the top-right corner of the web dashboard or navigate to **`/guide`** to read the complete field manual covering autocomplete algorithms, search intent classification, and search volume extraction via Google Keyword Planner.
+Click the **`[?] Guide`** button in the web dashboard or navigate directly to **`/guide`** to read the complete field manual covering autocomplete algorithms, search intent classification, and search volume extraction via Google Keyword Planner.

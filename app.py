@@ -145,35 +145,83 @@ DASHBOARD_HTML = """
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
-        .topbar-left {
+        .brand-wrap {
             display: flex;
             align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            gap: 8px;
         }
         .logo {
-            font-size: 15px;
-            font-weight: 700;
+            font-size: 16px;
+            font-weight: 800;
             color: var(--text-strong);
-            letter-spacing: -0.3px;
+            letter-spacing: -0.4px;
         }
-        .sheet-control {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .logo-sub {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-dim);
+            background: #1c2026;
+            border: 1px solid #282f3a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+        .guide-btn {
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 4px 8px;
+            color: var(--text-dim);
+            padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            transition: all 0.15s ease;
         }
-        .sheet-control select {
+        .guide-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text-strong);
+            border-color: #4a5463;
+        }
+        .guide-badge {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            background: #2b313b;
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        /* Sheet Bar */
+        .sheet-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .sheet-picker {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 4px;
+            min-width: 0;
+        }
+        .sheet-picker select {
             background: transparent;
             border: none;
             color: var(--text-strong);
@@ -181,90 +229,101 @@ DASHBOARD_HTML = """
             outline: none;
             cursor: pointer;
             font-size: 12px;
-            max-width: 170px;
+            width: 100%;
+            padding: 0;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
         }
-        .sheet-control select option { background: var(--surface); color: var(--text); }
-        .btn-text {
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: bold;
-            padding: 0 4px;
-        }
-        .btn-text:hover { color: var(--text-strong); }
-
-        .topbar-main {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .topbar-tabs {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .desktop-help { display: inline-flex; }
-        .mobile-help { display: none; }
-
-        /* Box-matching Question Mark Button */
-        .help-btn {
-            height: 28px;
-            min-width: 28px;
-            padding: 0 8px;
-            border-radius: 4px;
-            border: 1px solid var(--border);
+        .sheet-picker select option {
             background: var(--surface);
-            color: var(--text-dim);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            text-decoration: none;
-            flex-shrink: 0;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            color: var(--text);
         }
-        .help-btn:hover {
-            background: var(--surface-hover);
-            color: var(--text-strong);
-            border-color: #4a5463;
-        }
-        .nav-tab {
-            text-decoration: none;
-            color: var(--text-dim);
-            padding: 5px 10px;
-            border-radius: 4px;
-            border: 1px solid var(--border);
+        .btn-new-sheet {
             background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 6px 12px;
+            border-radius: 4px;
             font-size: 12px;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
         }
-        .nav-tab:hover { background: var(--surface-hover); color: var(--text-strong); }
-        .nav-tab.active { border-color: #4a5463; color: var(--text-strong); background: #23272f; }
-        .nav-tab.saved-active { border-color: var(--star); color: var(--star); background: #24221c; }
+        .btn-new-sheet:hover {
+            background: var(--surface-hover);
+            color: var(--text-strong);
+            border-color: #4a5463;
+        }
 
-        /* Stats Strip */
-        .stats-strip {
+        /* Unified Metrics Strip & Tabs */
+        .metrics-strip {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            max-width: 320px;
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
-        .stat-box {
+        .metric-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 8px 10px;
             border-radius: 4px;
+            padding: 8px 10px;
+            text-align: left;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.15s ease;
+            min-width: 0;
+            font-family: inherit;
+            font-size: inherit;
         }
-        .stat-lbl { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.4px; }
-        .stat-num { font-size: 16px; font-weight: 700; color: var(--text-strong); margin-top: 2px; }
+        .metric-card:hover {
+            background: var(--surface-hover);
+            border-color: #3e4653;
+        }
+        .metric-card.active {
+            background: #1c222b;
+            border-color: #4f5b6d;
+        }
+        .metric-card.saved-active {
+            background: #23221b;
+            border-color: var(--star);
+        }
+        .metric-lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            letter-spacing: 0.4px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .metric-val {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-strong);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .metric-card.saved-active .metric-val {
+            color: var(--star);
+        }
+        .export-card:hover .metric-val {
+            color: #93c5fd;
+        }
 
         /* Card panels */
         .card {
@@ -561,52 +620,50 @@ DASHBOARD_HTML = """
         /* Responsive Mobile Tweak */
         @media (max-width: 768px) {
             body { padding: 6px; font-size: 12px; }
-            .desktop-help { display: none !important; }
-            .mobile-help { display: inline-flex !important; }
 
             .topbar {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 6px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
                 padding-bottom: 8px;
                 margin-bottom: 8px;
             }
-            .topbar-main {
-                width: 100%;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 4px;
-            }
-            .topbar-left {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                min-width: 0;
-            }
-            .sheet-control {
-                padding: 3px 6px;
-                gap: 3px;
-            }
-            .sheet-control select {
-                max-width: 120px;
-                font-size: 11px;
-            }
-            .help-btn {
-                height: 26px;
-                min-width: 26px;
-                padding: 0 6px;
-                font-size: 12px;
-            }
-            .topbar-tabs {
-                width: 100%;
-                display: flex;
-                justify-content: flex-start;
-                gap: 4px;
-            }
-            .nav-tab {
+            .guide-btn {
                 padding: 4px 8px;
                 font-size: 11px;
+            }
+
+            .sheet-bar {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            .sheet-picker {
+                padding: 5px 8px;
+            }
+            .sheet-picker select {
+                font-size: 11px;
+            }
+            .btn-new-sheet {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+
+            .metrics-strip {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            .metric-card {
+                padding: 6px 8px;
+            }
+            .metric-lbl {
+                font-size: 9px;
+            }
+            .metric-val {
+                font-size: 13px;
             }
 
             .harvest-main { flex-direction: column; align-items: stretch; gap: 6px; }
@@ -667,56 +724,63 @@ DASHBOARD_HTML = """
                 color: var(--text-dim);
                 white-space: nowrap;
             }
-            .stats-strip { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- TOP BAR -->
+    <!-- 1. APP HEADER -->
     <div class="topbar">
-        <div class="topbar-main">
-            <div class="topbar-left">
-                <span class="logo">KWR</span>
-                
-                <!-- Quick inline sheet switcher -->
-                <div class="sheet-control">
-                    <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <select id="sheetSelect" onchange="switchSheet(this.value)">
-                        {% for s in available_sheets %}
-                        <option value="{{ s }}" {% if s == active_sheet %}selected{% endif %}>{{ s }}</option>
-                        {% endfor %}
-                    </select>
-                    <button class="btn-text" onclick="promptNewSheet()" title="Create new sheet on device">+</button>
-                </div>
-            </div>
-
-            <!-- On phone: Question mark box button sits in top header row with KWR and sheet switcher -->
-            <a href="/guide" target="_blank" class="help-btn mobile-help" title="How to use manual">?</a>
+        <div class="brand-wrap">
+            <span class="logo">KWR</span>
+            <span class="logo-sub">RESEARCH</span>
         </div>
-
-        <div class="topbar-tabs">
-            <button type="button" class="nav-tab active" id="tabAll" onclick="setViewTab('all')">All (<span id="countAll">{{ all_total_count }}</span>)</button>
-            <button type="button" class="nav-tab" id="tabSaved" onclick="setViewTab('saved')">
-                <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                Saved (<span id="countSaved">{{ saved_count }}</span>)
-            </button>
-            <a href="/export" class="nav-tab" title="Download CSV"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
-            <!-- On bigger devices: Question mark box button sits at end of tabs row -->
-            <a href="/guide" target="_blank" class="help-btn desktop-help" title="How to use manual">?</a>
-        </div>
+        <a href="/guide" target="_blank" class="guide-btn" title="How to use manual">
+            <span class="guide-badge">?</span>
+            <span>Guide</span>
+        </a>
     </div>
 
-    <!-- STATS STRIP -->
-    <div class="stats-strip">
-        <div class="stat-box">
-            <div class="stat-lbl">Keywords</div>
-            <div class="stat-num" id="statTotal">{{ total_count }}</div>
+    <!-- 2. ACTIVE SHEET BAR -->
+    <div class="sheet-bar">
+        <div class="sheet-picker">
+            <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <select id="sheetSelect" onchange="switchSheet(this.value)">
+                {% for s in available_sheets %}
+                <option value="{{ s }}" {% if s == active_sheet %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <div class="stat-box">
-            <div class="stat-lbl">Saved</div>
-            <div class="stat-num" style="color: var(--star);" id="statSaved">{{ saved_count }}</div>
-        </div>
+        <button type="button" class="btn-new-sheet" onclick="promptNewSheet()" title="Create new sheet on device">
+            <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New</span>
+        </button>
+    </div>
+
+    <!-- 3. UNIFIED METRICS STRIP & TABS -->
+    <div class="metrics-strip">
+        <button type="button" class="metric-card active" id="tabAll" onclick="setViewTab('all')">
+            <span class="metric-lbl">Keywords</span>
+            <span class="metric-val" id="statTotal">{{ total_count }}</span>
+            <span id="countAll" style="display:none;">{{ all_total_count }}</span>
+        </button>
+
+        <button type="button" class="metric-card" id="tabSaved" onclick="setViewTab('saved')">
+            <span class="metric-lbl">
+                <svg class="icon" viewBox="0 0 24 24" width="11" height="11" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Saved
+            </span>
+            <span class="metric-val" id="statSaved">{{ saved_count }}</span>
+            <span id="countSaved" style="display:none;">{{ saved_count }}</span>
+        </button>
+
+        <a href="/export" class="metric-card export-card" title="Download CSV">
+            <span class="metric-lbl">Export</span>
+            <span class="metric-val">
+                <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                CSV
+            </span>
+        </a>
     </div>
 
     <!-- HARVESTER PANEL -->
