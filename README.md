@@ -62,15 +62,55 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
 
 ## Zero-Friction Quick Start
 
-### 1. One-Click Launch (Recommended)
-- **Windows**: Double-click **`start.bat`** (or run `python kwr.py start`).
-- **Linux / macOS / Termux**: Run **`chmod +x start.sh && ./start.sh`**.
+### 1. Android Phone (Termux) Setup
+Run KWR entirely standalone directly on your Android phone without needing a computer:
+```bash
+# 1. Update Termux packages & install Python + Git
+pkg update -y && pkg install python git -y
 
-*This automatically checks and installs dependencies, then launches the local dashboard at `http://127.0.0.1:5000`.*
+# 2. Clone the repository
+git clone https://github.com/durgesharma/seo-keyword-finder.git
+cd seo-keyword-finder
+
+# 3. Launch with one tap
+chmod +x start.sh
+./start.sh
+```
+Open **`http://localhost:5000`** in Chrome on your phone.
+*(Tip: In Chrome, tap the 3 dots menu and select **"Add to Home screen"** to launch KWR like a native mobile app!)*
 
 ---
 
-### 2. Manual Setup
+### 2. iPhone / iPad (iOS) Setup
+You can use KWR on an iPhone using either method:
+
+- **Method A — Wi-Fi Network Access (Easiest)**:
+  1. Start KWR on your computer, laptop, or Android device on the same local Wi-Fi: `python kwr.py start`.
+  2. The terminal will display your network address: `http://<YOUR-IP>:5000`.
+  3. Open Safari on your iPhone, enter `http://<YOUR-IP>:5000`, tap **Share (square with arrow)**, and tap **"Add to Home Screen"**.
+
+- **Method B — Standalone on iPhone (via a-Shell app)**:
+  1. Install free [a-Shell](https://apps.apple.com/app/a-shell/id1473805438) from the App Store.
+  2. In a-Shell, run:
+     ```bash
+     git clone https://github.com/durgesharma/seo-keyword-finder.git
+     cd seo-keyword-finder
+     python3 kwr.py start
+     ```
+  3. Open Safari and go to **`http://localhost:5000`**.
+
+---
+
+### 3. Windows & Mac / Linux Desktop
+
+- **Windows**: Double-click **`start.bat`** (or run `python kwr.py start`).
+- **Mac / Linux**: Run **`chmod +x start.sh && ./start.sh`**.
+
+*Dependencies (`flask`, `requests`) are automatically verified and installed on first run.*
+
+---
+
+### 4. Manual Setup
 ```bash
 # 1. Clone repository
 git clone https://github.com/durgesharma/seo-keyword-finder.git

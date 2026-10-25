@@ -196,6 +196,18 @@ def cmd_check():
         print("     pip install -r requirements.txt (or: pip install flask requests)")
     print("=" * 70)
 
+def get_local_ip():
+    """Returns local network IP address for mobile / Wi-Fi access."""
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
 def cmd_start():
     print_banner()
     # Check and auto-install essential dependencies if missing
@@ -216,12 +228,15 @@ def cmd_start():
             print(f"    Please run: pip install {' '.join(missing_core)}\n")
             return
 
-    print("[*] Launching KWR Web Command Center...")
-    print("[*] Address: http://127.0.0.1:5000")
+    local_ip = get_local_ip()
+    print("[*] Launching KWR Web Command Center (Mobile & Desktop Ready)...")
+    print(f"[*] Local Device (Phone/PC):  http://127.0.0.1:5000")
+    if local_ip and local_ip != "127.0.0.1":
+        print(f"[*] Other Phone/Wi-Fi Device: http://{local_ip}:5000")
     print("[*] Press Ctrl+C to stop the server.\n")
     try:
         from app import app
-        app.run(host="127.0.0.1", port=5000, debug=False)
+        app.run(host="0.0.0.0", port=5000, debug=False)
     except ImportError as e:
         print(f"[!] Error: Missing dependency: {e}")
         print("[!] Please run: pip install -r requirements.txt")
