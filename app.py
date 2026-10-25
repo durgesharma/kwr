@@ -97,191 +97,473 @@ class HarvestManager:
 
 harvest_manager = HarvestManager()
 
-# ==================== TEMPLATES ====================
+# ==================== STREAMLINED MINIMAL DASHBOARD ====================
 
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KWR - Keyword Research Intelligence Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>KWR // Keyword Research</title>
     <style>
         :root {
-            --bg: #0f1115;
-            --surface: #181b21;
-            --border: #2c323f;
-            --text: #e6edf3;
-            --muted: #8b949e;
-            --accent: #238636;
-            --accent-blue: #1f6feb;
-            --danger: #da3633;
-            --tag-tx: #9e6a03;
-            --tag-comm: #1f6feb;
-            --tag-info: #238636;
+            --bg: #0c0e12;
+            --surface: #15181f;
+            --surface-hover: #1c202a;
+            --border: #262b36;
+            --text: #d8dee8;
+            --text-dim: #7d8595;
+            --blue: #3b82f6;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background-color: var(--bg); color: var(--text); padding: 16px; font-size: 13px; line-height: 1.4; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-        .header h1 { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
-        .header .nav-links { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .header .nav-links a { color: #58a6ff; text-decoration: none; font-size: 12px; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
-        .header .nav-links a:hover { background: #22272e; color: #79c0ff; }
-        .header .nav-links a.help-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 14px; font-weight: 700; color: #e6edf3; background: #21262d; border: 1px solid #30363d; }
-        .header .nav-links a.help-btn:hover { background: #30363d; color: #58a6ff; border-color: #58a6ff; }
-        
-        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 10px; border-radius: 4px; }
-        .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
-        .stat-card .val { font-size: 1.2rem; font-weight: bold; margin-top: 4px; color: #58a6ff; }
-        
-        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 14px; margin-bottom: 16px; }
-        .panel-title { font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 10px; color: #8b949e; letter-spacing: 0.5px; }
-        
-        .grid-form { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr; gap: 10px; align-items: end; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 11px; color: var(--muted); }
-        input[type="text"], select, textarea {
-            background: #0d1117; border: 1px solid var(--border); color: #c9d1d9; padding: 8px 10px; font-family: inherit; font-size: 12px; border-radius: 4px; outline: none; width: 100%;
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 13px;
+            line-height: 1.45;
+            padding: 12px;
+            -webkit-font-smoothing: antialiased;
         }
-        input[type="text"]:focus, select:focus, textarea:focus { border-color: #58a6ff; }
-        
-        .adv-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        
+
+        /* Top Bar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .logo {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+        .sheet-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .sheet-control select {
+            background: transparent;
+            border: none;
+            color: var(--blue);
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            font-size: 12px;
+            max-width: 170px;
+        }
+        .sheet-control select option { background: var(--surface); color: var(--text); }
+        .btn-text {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 0 4px;
+        }
+        .btn-text:hover { color: #fff; }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .nav-tab {
+            text-decoration: none;
+            color: var(--text-dim);
+            padding: 6px 11px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .nav-tab:hover { background: var(--surface-hover); color: #fff; }
+        .nav-tab.active { border-color: var(--blue); color: var(--blue); }
+        .nav-tab.saved-active { border-color: var(--yellow); color: var(--yellow); }
+
+        /* Stats Strip */
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .stat-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 10px;
+            border-radius: 4px;
+        }
+        .stat-lbl { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.4px; }
+        .stat-num { font-size: 17px; font-weight: 700; color: #fff; margin-top: 2px; }
+
+        /* Card panels */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        /* Harvest Form */
+        .harvest-main {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .harvest-main input[type="text"] {
+            flex: 2;
+            min-width: 220px;
+        }
+        .harvest-main select {
+            flex: 1.2;
+            min-width: 170px;
+        }
+        input[type="text"], select {
+            background: #090a0d;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 9px 11px;
+            font-size: 13px;
+            border-radius: 4px;
+            outline: none;
+            width: 100%;
+        }
+        input[type="text"]:focus, select:focus {
+            border-color: var(--blue);
+        }
+
         button.btn {
-            background: var(--accent-blue); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 600; border-radius: 4px; cursor: pointer; height: 35px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            padding: 9px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 37px;
         }
-        button.btn:hover { filter: brightness(1.15); }
-        button.btn-green { background: var(--accent); }
-        button.btn-danger { background: var(--danger); }
-        button.btn-sm { height: auto; padding: 4px 8px; font-size: 11px; }
+        button.btn:hover { filter: brightness(1.12); }
+        button.btn-green { background: #15803d; }
+        button.btn-green:hover { background: #16a34a; }
+        button.btn-danger { background: #b91c1c; }
+        button.btn-danger:hover { background: #dc2626; }
+        button.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        button.btn-outline:hover { background: var(--surface-hover); color: #fff; }
 
-        /* Progress banner */
-        #progressContainer { display: none; background: #161b22; border: 1px solid #388bfd; border-radius: 4px; padding: 12px; margin-bottom: 16px; }
-        .progress-bar-bg { background: #21262d; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
-        .progress-bar-fill { background: #238636; height: 100%; width: 0%; transition: width 0.2s; }
-        
-        /* Table and filters */
-        .controls-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .left-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .right-controls { display: flex; gap: 8px; align-items: center; }
+        .options-toggle {
+            font-size: 11px;
+            color: var(--text-dim);
+            cursor: pointer;
+            margin-top: 8px;
+            display: inline-block;
+            user-select: none;
+        }
+        .options-toggle:hover { color: var(--blue); }
+        .harvest-options {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+        }
+        .field-lbl { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
 
-        .table-wrap { overflow-x: auto; max-height: 60vh; border: 1px solid var(--border); border-radius: 4px; background: #0d1117; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        th, td { padding: 7px 10px; border-bottom: 1px solid #21262d; white-space: nowrap; }
-        th { background: #161b22; color: #8b949e; font-weight: 600; position: sticky; top: 0; z-index: 5; font-size: 11px; }
-        tr:hover td { background: #161b22; }
-        
-        .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-        .badge-tx { background: rgba(210, 153, 34, 0.2); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.4); }
-        .badge-comm { background: rgba(56, 139, 253, 0.2); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.4); }
-        .badge-info { background: rgba(63, 185, 80, 0.2); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.4); }
-        
-        a.serp-link { color: #8b949e; text-decoration: none; margin-left: 6px; font-size: 11px; }
-        a.serp-link:hover { color: #58a6ff; text-decoration: underline; }
+        /* Progress Banner */
+        #progressContainer {
+            display: none;
+            background: #111827;
+            border: 1px solid #1e3a8a;
+            border-radius: 4px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+        }
+        .progress-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        .progress-bar-bg {
+            background: #1f2937;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .progress-bar-fill {
+            background: var(--green);
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s;
+        }
 
-        select.inline-select { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; font-size: 11px; padding: 2px 4px; border-radius: 3px; }
-        
-        /* Bookmark button */
-        .bm-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; cursor: pointer; }
-        .bm-btn:hover { color: #fff; border-color: #58a6ff; }
-        .bm-btn.bm-active { background: rgba(210, 153, 34, 0.15); border-color: #d29922; color: #d29922; font-weight: bold; }
+        /* Filter & Table Bar */
+        .filter-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .actions-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .search-wrap {
+            position: relative;
+            min-width: 200px;
+            max-width: 280px;
+            flex: 1;
+        }
+        .search-wrap input { padding-right: 60px; }
+        .search-indicator {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            color: var(--blue);
+            display: none;
+        }
 
+        /* Table Design */
+        .table-wrap {
+            overflow-x: auto;
+            max-height: 62vh;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: #090a0d;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+        th, td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #1a1e27;
+            white-space: nowrap;
+        }
+        th {
+            background: #12151c;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            user-select: none;
+        }
+        tr:hover td { background: #131720; }
+
+        .kw-cell {
+            color: #fff;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .quick-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 10px;
+            border: 1px solid #2d3340;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+        .quick-link:hover { color: var(--blue); border-color: var(--blue); }
+
+        /* Star Button */
+        .star-btn {
+            background: transparent;
+            border: none;
+            color: #4b5563;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .star-btn:hover { color: var(--yellow); }
+        .star-btn.active { color: var(--yellow); }
+
+        /* Subtle Badges */
+        .pill {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .pill-tx { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+        .pill-comm { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .pill-info { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+
+        select.table-select {
+            background: #11141a;
+            border: 1px solid #232833;
+            color: var(--text);
+            font-size: 11px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            width: auto;
+        }
+
+        /* Toast Message */
         #toast {
-            position: fixed; bottom: 20px; right: 20px; background: #238636; color: #fff; padding: 10px 16px; border-radius: 4px; display: none; z-index: 99; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #15803d;
+            color: #fff;
+            padding: 9px 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
-        /* Modal Overlay */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100;
+        /* Responsive Mobile Tweak */
+        @media (max-width: 768px) {
+            body { padding: 8px; font-size: 12px; }
+            .harvest-main { flex-direction: column; align-items: stretch; }
+            .harvest-main input, .harvest-main select, .harvest-main button { width: 100%; }
+            .filter-row { flex-direction: column; align-items: stretch; }
+            .search-wrap { max-width: 100%; }
+            .filter-group, .actions-group { width: 100%; justify-content: space-between; }
+            .stats-strip { grid-template-columns: repeat(2, 1fr); }
         }
-        .modal-card {
-            background: #181b21; border: 1px solid var(--border); border-radius: 6px; padding: 20px; width: 520px; max-width: 90vw; color: var(--text);
-        }
-        .modal-card h3 { font-size: 14px; margin-bottom: 12px; color: #58a6ff; display: flex; justify-content: space-between; align-items: center; }
-        .modal-card .close-btn { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
-        .setup-steps { background: #0d1117; border: 1px solid #30363d; padding: 12px; border-radius: 4px; font-size: 11px; margin-bottom: 14px; color: #8b949e; line-height: 1.5; }
-        .setup-steps ol { padding-left: 18px; }
-        .setup-steps li { margin-bottom: 4px; }
-        .setup-steps code { color: #58a6ff; }
-
-        .sheet-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #0d1117; border: 1px solid #21262d; border-radius: 4px; margin-bottom: 6px; font-size: 12px; }
-        .sheet-item.active { border-color: #238636; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div>
-            <h1>KWR ENGINE // Google Autocomplete Intelligence</h1>
-            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
-                Active Sheet: <strong style="color: #58a6ff;">{{ active_sheet }}</strong>
-                {% if is_saved_view %} &bull; <span style="color: #d29922; font-weight: bold;">★ SAVED / BOOKMARKS VIEW</span>{% endif %}
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="logo">KWR</span>
+            
+            <!-- Quick inline sheet switcher -->
+            <div class="sheet-control">
+                <span>📄</span>
+                <select id="sheetSelect" onchange="switchSheet(this.value)">
+                    {% for s in available_sheets %}
+                    <option value="{{ s }}" {% if s == active_sheet %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn-text" onclick="promptNewSheet()" title="Create new sheet on device">+</button>
             </div>
         </div>
-        <div class="nav-links">
+
+        <div class="topbar-right">
             {% if is_saved_view %}
-                <a href="/" style="color: #79c0ff; font-weight: bold;">← ALL KEYWORDS</a>
+                <a href="/" class="nav-tab">← All Keywords ({{ all_total_count }})</a>
+                <span class="nav-tab saved-active">★ Saved ({{ saved_count }})</span>
             {% else %}
-                <a href="/saved" style="color: #d29922; font-weight: bold;">★ SAVED ({{ saved_count }})</a>
+                <span class="nav-tab active">All ({{ total_count }})</span>
+                <a href="/saved" class="nav-tab">★ Saved ({{ saved_count }})</a>
             {% endif %}
-            <button class="btn btn-sm" onclick="openSheetSelectorModal()" style="background: #21262d; border: 1px solid #30363d; color: #79c0ff;">📁 SHEETS</button>
-            <button class="btn btn-sm" onclick="openSheetsModal()" style="background: #21262d; border: 1px solid #30363d; color: #58a6ff;">📊 GOOGLE SHEET</button>
-            <a href="/export">⬇ EXPORT CSV</a>
-            <a href="/guide" target="_blank" class="help-btn" title="How to Use / Field Manual">?</a>
+            
+            <a href="/export" class="nav-tab" title="Download CSV">⬇ CSV</a>
+            <a href="/guide" target="_blank" class="nav-tab" title="How to use manual">?</a>
         </div>
     </div>
 
-    <!-- STATS BAR -->
-    <div class="stats-bar">
-        <div class="stat-card">
-            <div class="label">Total Keywords</div>
-            <div class="val" id="statTotal">{{ total_count }}</div>
+    <!-- STATS STRIP -->
+    <div class="stats-strip">
+        <div class="stat-box">
+            <div class="stat-lbl">Keywords</div>
+            <div class="stat-num" id="statTotal">{{ total_count }}</div>
         </div>
-        <div class="stat-card">
-            <div class="label">Saved (Bookmarked)</div>
-            <div class="val" style="color: #d29922;">{{ saved_count }}</div>
+        <div class="stat-box">
+            <div class="stat-lbl">Saved</div>
+            <div class="stat-num" style="color: var(--yellow);">{{ saved_count }}</div>
         </div>
-        <div class="stat-card">
-            <div class="label">Transactional (Buyer)</div>
-            <div class="val" style="color: #d29922;">{{ tx_count }}</div>
+        <div class="stat-box">
+            <div class="stat-lbl">Transactional</div>
+            <div class="stat-num" style="color: var(--yellow);">{{ tx_count }}</div>
         </div>
-        <div class="stat-card">
-            <div class="label">Commercial (Reviews/Vs)</div>
-            <div class="val" style="color: #58a6ff;">{{ comm_count }}</div>
+        <div class="stat-box">
+            <div class="stat-lbl">Commercial</div>
+            <div class="stat-num" style="color: var(--blue);">{{ comm_count }}</div>
         </div>
-        <div class="stat-card">
-            <div class="label">Informational (Guides/Q)</div>
-            <div class="val" style="color: #3fb950;">{{ info_count }}</div>
+        <div class="stat-box">
+            <div class="stat-lbl">Informational</div>
+            <div class="stat-num" style="color: var(--green);">{{ info_count }}</div>
         </div>
     </div>
 
     {% if not is_saved_view %}
-    <!-- HARVESTER CONTROL PANEL -->
-    <div class="panel">
-        <div class="panel-title">Keyword Discovery Runner (Target Sheet: {{ active_sheet }})</div>
+    <!-- HARVESTER PANEL -->
+    <div class="card">
         <form id="harvestForm" onsubmit="startHarvest(event)">
-            <div class="grid-form">
-                <div class="form-group">
-                    <label>Seed Keyword</label>
-                    <input type="text" id="seedInput" placeholder="e.g. modular kitchen, wardrobe design, carpenter" required>
-                </div>
-                <div class="form-group">
-                    <label>Expansion Mode</label>
-                    <select id="modeSelect">
-                        <option value="az_suffix">Alphabet Soup: Suffix [Seed + A-Z] (Standard)</option>
-                        <option value="az_prefix">Alphabet Soup: Prefix [A-Z + Seed]</option>
-                        <option value="commercial">Commercial & Buyer Intent (Price, Cost, Contractor, Near Me)</option>
-                        <option value="questions">Questions & Informational (How, What, Why, Which)</option>
-                        <option value="prepositions">Prepositions & Comparisons (Vs, For, With, Near)</option>
-                        <option value="numbers">Numbers & Sizes [Seed + 0-9]</option>
-                        <option value="deep_harvest">🔥 Full Deep Harvest (Runs All Above Modules)</option>
-                        <option value="standard">Standard Fast (Direct Suggestions Only)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Region & Language</label>
+            <div class="harvest-main">
+                <input type="text" id="seedInput" placeholder="Enter seed keyword (e.g. modular kitchen, wardrobe)..." required>
+                <select id="modeSelect">
+                    <option value="az_suffix">Alphabet Soup: [Seed + A-Z] (Broad)</option>
+                    <option value="az_prefix">Prefix Soup: [A-Z + Seed]</option>
+                    <option value="commercial">Commercial: Cost, Price, Contractor, Near Me</option>
+                    <option value="questions">Questions: How, What, Why, Which</option>
+                    <option value="prepositions">Prepositions: For, With, Vs, Near</option>
+                    <option value="numbers">Numbers: [Seed + 0-9] (Sizes, BHK)</option>
+                    <option value="deep_harvest">🔥 Full Deep Harvest (All Modules)</option>
+                    <option value="standard">Standard (Direct Suggestions)</option>
+                </select>
+                <button type="submit" class="btn btn-green" id="runBtn">⚡ Harvest</button>
+            </div>
+
+            <div class="options-toggle" onclick="toggleOptions()">⚙ Target Options (Region, Locations, Exclude) ▼</div>
+
+            <div class="harvest-options" id="harvestOptions">
+                <div>
+                    <label class="field-lbl">Region</label>
                     <select id="regionSelect">
                         <option value="in:en" selected>India (en)</option>
                         <option value="in:hi">India (hi)</option>
@@ -290,71 +572,69 @@ DASHBOARD_HTML = """
                         <option value="ae:en">UAE (en)</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <button type="submit" class="btn btn-green" id="runBtn">⚡ RUN HARVEST</button>
+                <div>
+                    <label class="field-lbl">Locations (comma-separated)</label>
+                    <input type="text" id="locationsInput" value="Navi Mumbai, Thane" placeholder="Navi Mumbai, Thane">
                 </div>
-            </div>
-
-            <div class="adv-row">
-                <div class="form-group">
-                    <label>Location Modifiers (comma-separated, appended to query)</label>
-                    <input type="text" id="locationsInput" value="Navi Mumbai, Thane" placeholder="e.g. Navi Mumbai, Thane, Kharghar">
-                </div>
-                <div class="form-group">
-                    <label>Negative Filter (comma-separated, auto-discards junk matches)</label>
-                    <input type="text" id="negativesInput" value="job, salary, vacancy, pdf, download, course" placeholder="e.g. jobs, salary, pdf">
+                <div>
+                    <label class="field-lbl">Negative Exclusions</label>
+                    <input type="text" id="negativesInput" value="job, salary, vacancy, pdf, download" placeholder="jobs, salary, pdf">
                 </div>
             </div>
         </form>
     </div>
     {% endif %}
 
-    <!-- LIVE PROGRESS BOX -->
+    <!-- PROGRESS BANNER -->
     <div id="progressContainer">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong style="color: #58a6ff;" id="progressText">Harvesting keywords...</strong>
-            <button class="btn btn-danger btn-sm" onclick="stopHarvest()">STOP JOB</button>
+        <div class="progress-line">
+            <span id="progressText" style="color: #93c5fd; font-weight: 600;">Harvesting keywords...</span>
+            <button class="btn btn-danger" style="height: 24px; padding: 2px 8px; font-size: 11px;" onclick="stopHarvest()">Stop</button>
         </div>
         <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="progressFill"></div>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted);">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim);">
             <span id="currentQueryText">Query: -</span>
-            <span id="harvestCountText">New Harvested: 0</span>
+            <span id="harvestCountText">New: 0</span>
         </div>
     </div>
 
-    <!-- DATA TABLE & CONTROLS -->
-    <div class="panel" style="padding: 10px;">
-        <div class="controls-bar">
-            <div class="left-controls">
-                <div style="position: relative; display: flex; align-items: center;">
-                    <input type="text" id="tableFilter" placeholder="Filter keywords in sheet..." style="width: 230px;" oninput="triggerFilterLoading()">
-                    <span id="searchLoading" style="display: none; position: absolute; right: 8px; font-size: 10px; color: #58a6ff;">filtering...</span>
+    <!-- FILTER & TABLE BAR -->
+    <div class="card" style="padding: 10px;">
+        <div class="filter-row">
+            <div class="filter-group">
+                <div class="search-wrap">
+                    <input type="text" id="tableFilter" placeholder="Filter keywords..." oninput="triggerFilterLoading()">
+                    <span class="search-indicator" id="searchLoading">filtering...</span>
                 </div>
-                <select id="filterIntent" onchange="applyFilter()" style="width: 140px;">
+                
+                <select id="filterIntent" onchange="applyFilter()" style="width: 120px;">
                     <option value="">All Intents</option>
                     <option value="Transactional">Transactional</option>
                     <option value="Commercial">Commercial</option>
                     <option value="Informational">Informational</option>
                 </select>
-                <select id="filterCluster" onchange="applyFilter()" style="width: 170px;">
+
+                <select id="filterCluster" onchange="applyFilter()" style="width: 140px;">
                     <option value="">All Clusters</option>
                     {% for c in clusters %}
                     <option value="{{ c }}">{{ c }}</option>
                     {% endfor %}
                 </select>
-                <select id="filterWords" onchange="applyFilter()" style="width: 130px;">
+
+                <select id="filterWords" onchange="applyFilter()" style="width: 110px;">
                     <option value="0">All Lengths</option>
                     <option value="3">3+ Words</option>
-                    <option value="4">4+ Words (Long-tail)</option>
-                    <option value="5">5+ Words (Ultra long-tail)</option>
+                    <option value="4">4+ Words</option>
+                    <option value="5">5+ Words</option>
                 </select>
             </div>
-            <div class="right-controls">
-                <button class="btn btn-sm" onclick="copyVisibleKeywords()">📋 COPY VISIBLE FOR GKP</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteSelected()">🗑 DELETE SELECTED</button>
-                <span id="rowCountLabel" style="font-size: 11px; color: var(--muted);">Showing: {{ total_count }}</span>
+
+            <div class="actions-group">
+                <button class="btn btn-outline" style="height: 33px; font-size: 11px;" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner">📋 Copy List</button>
+                <button class="btn btn-danger" style="height: 33px; font-size: 11px;" onclick="deleteSelected()">🗑 Delete</button>
+                <span id="rowCountLabel" style="font-size: 11px; color: var(--text-dim); margin-left: 4px;">{{ total_count }} rows</span>
             </div>
         </div>
 
@@ -362,16 +642,16 @@ DASHBOARD_HTML = """
             <table id="keywordsTable">
                 <thead>
                     <tr>
-                        <th style="width: 28px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
-                        <th style="width: 60px;">SAVE</th>
+                        <th style="width: 24px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                        <th style="width: 32px;" title="Bookmark">★</th>
                         <th>KEYWORD</th>
                         <th>INTENT</th>
                         <th>CLUSTER</th>
-                        <th>DISCOVERED FROM</th>
+                        <th>SOURCE</th>
                         <th>WORDS</th>
                         <th>PRIORITY</th>
                         <th>STATUS</th>
-                        <th>ACTION</th>
+                        <th style="width: 24px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -379,51 +659,54 @@ DASHBOARD_HTML = """
                     <tr data-keyword="{{ r['Keyword'] | lower }}" 
                         data-intent="{{ r.get('Search Intent', 'Commercial') }}" 
                         data-cluster="{{ r.get('Topic Cluster', '') }}" 
-                        data-words="{{ r.get('Word Count', '1') }}"
-                        data-bookmarked="{{ r.get('Bookmarked', '0') }}">
+                        data-words="{{ r.get('Word Count', '1') }}">
                         <td><input type="checkbox" class="row-select" value="{{ r['Keyword'] }}"></td>
                         <td>
                             {% set is_bm = (r.get('Bookmarked') == '1' or r.get('Bookmarked') == 1) %}
-                            <button class="btn btn-sm bm-btn {% if is_bm %}bm-active{% endif %}" 
+                            <button class="star-btn {% if is_bm %}active{% endif %}" 
                                     onclick="toggleBookmark('{{ r['Keyword'] }}', this)" 
-                                    title="Save to Bookmarks">
-                                {% if is_bm %}★ Saved{% else %}☆ Save{% endif %}
+                                    title="Toggle save">
+                                {% if is_bm %}★{% else %}☆{% endif %}
                             </button>
                         </td>
                         <td>
-                            <strong>{{ r['Keyword'] }}</strong>
-                            <a class="serp-link" href="https://www.google.com/search?q={{ r['Keyword'] | urlencode }}" target="_blank" title="Check Live Google SERP">↗ SERP</a>
-                            <a class="serp-link" href="https://trends.google.com/trends/explore?q={{ r['Keyword'] | urlencode }}&geo=IN" target="_blank" title="Check Google Trends">↗ Trends</a>
+                            <div class="kw-cell">
+                                <span>{{ r['Keyword'] }}</span>
+                                <span style="display: inline-flex; gap: 4px;">
+                                    <a class="quick-link" href="https://www.google.com/search?q={{ r['Keyword'] | urlencode }}" target="_blank">serp</a>
+                                    <a class="quick-link" href="https://trends.google.com/trends/explore?q={{ r['Keyword'] | urlencode }}&geo=IN" target="_blank">trends</a>
+                                </span>
+                            </div>
                         </td>
                         <td>
                             {% set it = r.get('Search Intent', 'Commercial') %}
                             {% if it == 'Transactional' %}
-                                <span class="badge badge-tx">Transactional</span>
+                                <span class="pill pill-tx">Transactional</span>
                             {% elif it == 'Informational' %}
-                                <span class="badge badge-info">Informational</span>
+                                <span class="pill pill-info">Informational</span>
                             {% else %}
-                                <span class="badge badge-comm">Commercial</span>
+                                <span class="pill pill-comm">Commercial</span>
                             {% endif %}
                         </td>
-                        <td style="color: #8b949e;">{{ r.get('Topic Cluster', '-') }}</td>
-                        <td style="color: #6e7681; font-size: 11px;">{{ r.get('Discovered From', '-') }}</td>
+                        <td style="color: var(--text-dim);">{{ r.get('Topic Cluster', '-') }}</td>
+                        <td style="color: #64748b; font-size: 11px;">{{ r.get('Discovered From', '-') }}</td>
                         <td>{{ r.get('Word Count', '-') }}</td>
                         <td>
-                            <select class="inline-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Priority', this.value)">
+                            <select class="table-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Priority', this.value)">
                                 <option value="High" {% if r.get('Priority') == 'High' %}selected{% endif %}>High</option>
                                 <option value="Medium" {% if r.get('Priority') == 'Medium' or not r.get('Priority') %}selected{% endif %}>Medium</option>
                                 <option value="Low" {% if r.get('Priority') == 'Low' %}selected{% endif %}>Low</option>
                             </select>
                         </td>
                         <td>
-                            <select class="inline-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Validation Status', this.value)">
+                            <select class="table-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Validation Status', this.value)">
                                 <option value="Unverified" {% if r.get('Validation Status') == 'Unverified' or not r.get('Validation Status') %}selected{% endif %}>Unverified</option>
                                 <option value="Target" {% if r.get('Validation Status') == 'Target' %}selected{% endif %}>Target</option>
                                 <option value="Discard" {% if r.get('Validation Status') == 'Discard' %}selected{% endif %}>Discard</option>
                             </select>
                         </td>
                         <td>
-                            <button class="btn btn-danger btn-sm" onclick="deleteSingle('{{ r['Keyword'] }}')">×</button>
+                            <button class="btn-text" style="color: #ef4444;" onclick="deleteSingle('{{ r['Keyword'] }}')">×</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -432,88 +715,7 @@ DASHBOARD_HTML = """
         </div>
     </div>
 
-    <!-- SHEET SELECTOR & CREATOR MODAL -->
-    <div id="sheetSelectorModal" class="modal-overlay">
-        <div class="modal-card">
-            <h3>
-                <span>📁 Manage Local Sheets on Device</span>
-                <button class="close-btn" onclick="closeSheetSelectorModal()">×</button>
-            </h3>
-            
-            <p style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
-                Sheets stay stored locally as <code>.csv</code> files inside this app on your phone. You can create separate sheets for different niches, clients, or projects.
-            </p>
-
-            <div style="font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 6px;">Available Sheets on Device:</div>
-            <div id="sheetsListContainer" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;">
-                {% for s in available_sheets %}
-                <div class="sheet-item {% if s == active_sheet %}active{% endif %}">
-                    <div>
-                        <strong>{{ s }}</strong>
-                        {% if s == active_sheet %} <span style="color: #238636; font-size: 10px;">(ACTIVE)</span>{% endif %}
-                    </div>
-                    {% if s != active_sheet %}
-                    <button class="btn btn-sm" onclick="switchSheet('{{ s }}')">Select</button>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-
-            <div style="border-top: 1px solid var(--border); padding-top: 12px;">
-                <label style="font-size: 11px; font-weight: bold; color: #58a6ff;">Create New Sheet on Phone:</label>
-                <div style="display: flex; gap: 8px; margin-top: 6px;">
-                    <input type="text" id="newSheetNameInput" placeholder="e.g. interior_thane or wardrobe_keywords">
-                    <button class="btn btn-sm btn-green" onclick="createNewSheet()">+ CREATE</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- GOOGLE SHEETS LIVE SYNC MODAL -->
-    <div id="sheetsModal" class="modal-overlay">
-        <div class="modal-card">
-            <h3>
-                <span>📊 Google Sheets Live Synchronization</span>
-                <button class="close-btn" onclick="closeSheetsModal()">×</button>
-            </h3>
-            
-            <div class="setup-steps">
-                <strong>Quick 3-Step Setup:</strong>
-                <ol>
-                    <li>Download your Google Cloud Service Account JSON key and place it as <code>credentials.json</code> in this project folder.</li>
-                    <li>Create your Google Spreadsheet and click <strong>Share</strong> &rarr; grant <strong>Editor</strong> permission to your Service Account email.</li>
-                    <li>Paste your Google Spreadsheet URL below and click <strong>Save & Sync</strong>.</li>
-                </ol>
-            </div>
-
-            <div id="sheetsStatusBanner" style="font-size: 11px; margin-bottom: 12px; padding: 8px; border-radius: 4px; background: #21262d; border: 1px solid #30363d;">
-                Status: Checking...
-            </div>
-
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label>Google Spreadsheet URL or Sheet ID</label>
-                <input type="text" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit">
-            </div>
-
-            <div class="adv-row" style="margin-bottom: 15px;">
-                <div class="form-group">
-                    <label>Credentials File</label>
-                    <input type="text" id="sheetCredsInput" value="credentials.json">
-                </div>
-                <div class="form-group">
-                    <label>Worksheet Tab Name</label>
-                    <input type="text" id="sheetTabInput" value="Keywords">
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn btn-sm" onclick="closeSheetsModal()" style="background: #21262d;">CANCEL</button>
-                <button class="btn btn-sm btn-green" id="syncBtn" onclick="saveAndSyncSheets()">SYNC TO GOOGLE SHEET</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast">Copied to clipboard!</div>
+    <div id="toast">Copied to clipboard</div>
 
     <script>
         let pollTimer = null;
@@ -523,41 +725,12 @@ DASHBOARD_HTML = """
             const t = document.getElementById("toast");
             t.innerText = msg;
             t.style.display = "block";
-            setTimeout(() => { t.style.display = "none"; }, 2500);
+            setTimeout(() => { t.style.display = "none"; }, 2200);
         }
 
-        // Bookmark toggle
-        async function toggleBookmark(keyword, btn) {
-            const res = await fetch("/api/toggle_bookmark", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ keyword })
-            });
-            const data = await res.json();
-            if (data.success) {
-                if (data.is_bookmarked) {
-                    btn.classList.add("bm-active");
-                    btn.innerText = "★ Saved";
-                    showToast(`Saved '${keyword}' to bookmarks!`);
-                } else {
-                    btn.classList.remove("bm-active");
-                    btn.innerText = "☆ Save";
-                    showToast(`Removed '${keyword}' from bookmarks.`);
-                    // If on /saved view, hide row immediately
-                    if (window.location.pathname === "/saved") {
-                        btn.closest("tr").remove();
-                    }
-                }
-            }
-        }
-
-        // Sheet Selector Modal
-        function openSheetSelectorModal() {
-            document.getElementById("sheetSelectorModal").style.display = "flex";
-        }
-
-        function closeSheetSelectorModal() {
-            document.getElementById("sheetSelectorModal").style.display = "none";
+        function toggleOptions() {
+            const el = document.getElementById("harvestOptions");
+            el.style.display = (el.style.display === "grid") ? "none" : "grid";
         }
 
         async function switchSheet(sheetName) {
@@ -572,13 +745,9 @@ DASHBOARD_HTML = """
             }
         }
 
-        async function createNewSheet() {
-            const input = document.getElementById("newSheetNameInput");
-            const name = input.value.trim();
-            if (!name) {
-                alert("Please enter a name for the new sheet.");
-                return;
-            }
+        async function promptNewSheet() {
+            const name = prompt("Enter new sheet name (e.g. modular_pune):");
+            if (!name) return;
             const res = await fetch("/api/create_sheet", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -586,14 +755,35 @@ DASHBOARD_HTML = """
             });
             const data = await res.json();
             if (data.success) {
-                showToast(`Created and switched to ${data.sheet_name}`);
                 location.reload();
             } else {
-                alert(data.message || "Failed to create sheet.");
+                alert(data.message || "Could not create sheet.");
             }
         }
 
-        // Filtering with loading indicator
+        async function toggleBookmark(keyword, btn) {
+            const res = await fetch("/api/toggle_bookmark", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ keyword })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.is_bookmarked) {
+                    btn.classList.add("active");
+                    btn.innerText = "★";
+                    showToast("Saved to bookmarks");
+                } else {
+                    btn.classList.remove("active");
+                    btn.innerText = "☆";
+                    showToast("Removed bookmark");
+                    if (window.location.pathname === "/saved") {
+                        btn.closest("tr").remove();
+                    }
+                }
+            }
+        }
+
         function triggerFilterLoading() {
             const loader = document.getElementById("searchLoading");
             loader.style.display = "inline";
@@ -601,7 +791,7 @@ DASHBOARD_HTML = """
             filterDebounce = setTimeout(() => {
                 applyFilter();
                 loader.style.display = "none";
-            }, 80);
+            }, 60);
         }
 
         async function startHarvest(e) {
@@ -617,7 +807,7 @@ DASHBOARD_HTML = """
             document.getElementById("runBtn").disabled = true;
             document.getElementById("progressContainer").style.display = "block";
             document.getElementById("progressFill").style.width = "0%";
-            document.getElementById("progressText").innerText = "Starting engine...";
+            document.getElementById("progressText").innerText = "Harvesting...";
 
             const res = await fetch("/api/harvest", {
                 method: "POST",
@@ -643,19 +833,19 @@ DASHBOARD_HTML = """
             document.getElementById("progressFill").style.width = st.progress + "%";
             document.getElementById("progressText").innerText = `Harvesting: ${st.progress}%`;
             document.getElementById("currentQueryText").innerText = `Query: ${st.current_query || '-'}`;
-            document.getElementById("harvestCountText").innerText = `New Harvested: ${st.added_count}`;
+            document.getElementById("harvestCountText").innerText = `New: ${st.added_count}`;
 
             if (!st.running) {
                 clearInterval(pollTimer);
                 document.getElementById("runBtn").disabled = false;
-                showToast(`Harvest complete! Added ${st.added_count} new keywords.`);
-                setTimeout(() => { location.reload(); }, 1200);
+                showToast(`Harvest complete! Added ${st.added_count} keywords.`);
+                setTimeout(() => { location.reload(); }, 1000);
             }
         }
 
         async function stopHarvest() {
             await fetch("/api/stop", { method: "POST" });
-            document.getElementById("progressText").innerText = "Stopping job...";
+            document.getElementById("progressText").innerText = "Stopping...";
         }
 
         async function updateRowField(keyword, field, value) {
@@ -668,7 +858,7 @@ DASHBOARD_HTML = """
         }
 
         async function deleteSingle(keyword) {
-            if (!confirm(`Delete keyword '${keyword}'?`)) return;
+            if (!confirm(`Delete '${keyword}'?`)) return;
             await fetch("/api/delete_keywords", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -729,7 +919,7 @@ DASHBOARD_HTML = """
                 }
             });
 
-            document.getElementById("rowCountLabel").innerText = `Showing: ${visibleCount}`;
+            document.getElementById("rowCountLabel").innerText = `${visibleCount} rows`;
         }
 
         function copyVisibleKeywords() {
@@ -737,7 +927,8 @@ DASHBOARD_HTML = """
             const kws = [];
             visibleRows.forEach(tr => {
                 if (tr.style.display !== "none") {
-                    const kwText = tr.querySelector("strong") ? tr.querySelector("strong").innerText.trim() : "";
+                    const textNode = tr.querySelector(".kw-cell span");
+                    const kwText = textNode ? textNode.innerText.trim() : "";
                     if (kwText) kws.push(kwText);
                 }
             });
@@ -748,68 +939,8 @@ DASHBOARD_HTML = """
             }
 
             navigator.clipboard.writeText(kws.join("\\n")).then(() => {
-                showToast(`Copied ${kws.length} keywords to clipboard! Ready for Google Keyword Planner.`);
+                showToast(`Copied ${kws.length} keywords for GKP`);
             });
-        }
-
-        async function openSheetsModal() {
-            document.getElementById("sheetsModal").style.display = "flex";
-            const res = await fetch("/api/sheets_status");
-            const st = await res.json();
-            
-            document.getElementById("sheetUrlInput").value = st.sheet_id_or_url || "";
-            document.getElementById("sheetCredsInput").value = st.credentials_path || "credentials.json";
-            document.getElementById("sheetTabInput").value = st.worksheet_name || "Keywords";
-
-            const banner = document.getElementById("sheetsStatusBanner");
-            if (st.credentials_exist) {
-                banner.innerHTML = `<span style="color: #3fb950;">✔ Credentials Found:</span> <code>${st.credentials_path}</code><br><span style="color: #8b949e;">Service Email:</span> <code>${st.client_email || 'Present'}</code>`;
-            } else {
-                banner.innerHTML = `<span style="color: #d29922;">⚠ Missing Credentials:</span> Place <code>${st.credentials_path}</code> in the root folder.`;
-            }
-        }
-
-        function closeSheetsModal() {
-            document.getElementById("sheetsModal").style.display = "none";
-        }
-
-        async function saveAndSyncSheets() {
-            const sheetUrl = document.getElementById("sheetUrlInput").value.trim();
-            const credsPath = document.getElementById("sheetCredsInput").value.trim();
-            const tabName = document.getElementById("sheetTabInput").value.trim();
-
-            if (!sheetUrl) {
-                alert("Please enter a Google Spreadsheet URL or ID.");
-                return;
-            }
-
-            const syncBtn = document.getElementById("syncBtn");
-            syncBtn.disabled = true;
-            syncBtn.innerText = "Syncing...";
-
-            try {
-                const res = await fetch("/api/sheets_sync", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        sheet_id_or_url: sheetUrl,
-                        credentials_path: credsPath,
-                        worksheet_name: tabName
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast(data.message);
-                    closeSheetsModal();
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                alert("Sync failed: " + err);
-            } finally {
-                syncBtn.disabled = false;
-                syncBtn.innerText = "SYNC TO GOOGLE SHEET";
-            }
         }
     </script>
 </body>
@@ -817,7 +948,6 @@ DASHBOARD_HTML = """
 """
 
 # ==================== FIELD MANUAL (HOW TO USE) ====================
-# Book-style typography: High contrast, clean classic serif, readable line lengths, chapters.
 
 GUIDE_HTML = """
 <!DOCTYPE html>
@@ -936,13 +1066,6 @@ GUIDE_HTML = """
             border: 1px solid #dcd7cc;
             margin-bottom: 20px;
             line-height: 1.4;
-        }
-        blockquote {
-            margin: 20px 0;
-            padding: 10px 20px;
-            background: #f4f1ea;
-            border-left: 3px solid #666;
-            font-style: italic;
         }
         hr {
             border: 0;
@@ -1102,7 +1225,7 @@ modular kitchen z -> zinc hinges, zero maintenance, z-profile handles...
             </p>
             <ol>
                 <li>In the KWR Dashboard, apply your desired filters (e.g., select <em>Transactional</em> intent and <em>High</em> priority).</li>
-                <li>Click the button <strong>"📋 COPY VISIBLE FOR GKP"</strong>. The dashboard immediately copies the exact keyword list to your operating system clipboard.</li>
+                <li>Click the button <strong>"📋 Copy List"</strong>. The dashboard immediately copies the exact keyword list to your operating system clipboard.</li>
                 <li>Open <a href="https://ads.google.com/home/tools/keyword-planner/" target="_blank">Google Keyword Planner</a> (free with any Google Ads account).</li>
                 <li>Select <strong>"Get search volume and forecasts"</strong>.</li>
                 <li>Paste your copied clipboard list directly into the box and press <strong>"Get Started"</strong>.</li>
@@ -1124,7 +1247,7 @@ modular kitchen z -> zinc hinges, zero maintenance, z-profile handles...
 job, jobs, salary, vacancy, vacancies, pdf, download, course, training, exam, syllabus, login, portal, app download, free, second hand, used
             </pre>
             <p>
-                Regularly review the dashboard table, mark irrelevant queries with the <strong>"Discard"</strong> status or check their boxes and execute <strong>"DELETE SELECTED"</strong>. Keep your keyword pool lean, verified, and ready for deployment.
+                Regularly review the dashboard table, mark irrelevant queries with the <strong>"Discard"</strong> status or check their boxes and execute <strong>"Delete"</strong>. Keep your keyword pool lean, verified, and ready for deployment.
             </p>
         </section>
     </div>
@@ -1132,7 +1255,7 @@ job, jobs, salary, vacancy, vacancies, pdf, download, course, training, exam, sy
 </html>
 """
 
-# ==================== ROUTES ====================
+# ==================== BACKEND CONTROLLER ====================
 
 def get_stats_and_data(rows):
     total_count = len(rows)
@@ -1180,6 +1303,7 @@ def index():
         active_sheet=active_sheet,
         available_sheets=available_sheets,
         is_saved_view=False,
+        all_total_count=len(rows),
         **stats
     )
 
@@ -1187,10 +1311,8 @@ def index():
 def saved_view():
     active_sheet = get_active_sheet()
     all_rows = load_all_keywords(active_sheet)
-    # Filter only bookmarked rows
     saved_rows = [r for r in all_rows if str(r.get("Bookmarked", "0")) in ("1", "true", "True", "yes")]
     stats = get_stats_and_data(all_rows)
-    # override total count for saved view
     stats["total_count"] = len(saved_rows)
     available_sheets = list_available_sheets()
 
@@ -1200,6 +1322,7 @@ def saved_view():
         active_sheet=active_sheet,
         available_sheets=available_sheets,
         is_saved_view=True,
+        all_total_count=len(all_rows),
         **stats
     )
 
