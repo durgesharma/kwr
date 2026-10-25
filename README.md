@@ -1,13 +1,14 @@
-# kwr - SmartWood Keyword Research & Discovery Tool
+# kwr - Keyword Research & Discovery Intelligence Engine
 
-Automated keyword expansion and curation tool built for SmartWood carpentry, modular kitchen, and interior execution services.
+Automated Google Autocomplete keyword expansion, search intent classification, and curation engine.
 
 ## Overview
 
-- **`app.py`**: Flask web dashboard to view, filter, sort, edit, and expand keywords.
-- **`bot.py`**: Automated keyword discovery bot querying Google Autocomplete for seed queries.
-- **`test_local_sheet.py`**: Utility script to initialize and test the local CSV storage.
-- **`smartwood_keywords.csv`**: Local dataset tracking keywords, search intent, topic cluster, volume, and priority.
+- **`app.py`**: Functional web dashboard to run deep keyword harvests, filter by intent/clusters/word count, copy directly for Google Keyword Planner, and inspect live Google SERPs.
+- **`engine.py`**: Core scraping and intelligence engine featuring Alphabet Soup (A–Z), Question mining, Preposition & Comparison queries, Buyer intent detection, and regional targeting.
+- **`bot.py`**: Automated keyword discovery CLI runner.
+- **`smartwood_keywords.csv`**: Local CSV storage tracking keywords, intent, topic cluster, and priority.
+- **`/guide`**: Built-in, high-contrast, book-style Field Manual detailing autocomplete mechanisms, intent mapping, and search volume extraction workflows.
 
 ## Quick Start
 
@@ -16,7 +17,7 @@ Automated keyword expansion and curation tool built for SmartWood carpentry, mod
    pip install flask requests
    ```
 
-2. Run the keyword expansion bot:
+2. Run the keyword expansion bot (CLI):
    ```bash
    python bot.py
    ```

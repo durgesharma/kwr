@@ -122,8 +122,11 @@ DASHBOARD_HTML = """
         
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
         .header h1 { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
-        .header .nav-links a { color: #58a6ff; text-decoration: none; font-size: 12px; margin-left: 15px; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; background: var(--surface); }
+        .header .nav-links { display: flex; align-items: center; gap: 8px; }
+        .header .nav-links a { color: #58a6ff; text-decoration: none; font-size: 12px; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
         .header .nav-links a:hover { background: #22272e; color: #79c0ff; }
+        .header .nav-links a.help-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 14px; font-weight: 700; color: #e6edf3; background: #21262d; border: 1px solid #30363d; }
+        .header .nav-links a.help-btn:hover { background: #30363d; color: #58a6ff; border-color: #58a6ff; }
         
         .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
         .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 10px; border-radius: 4px; }
@@ -190,8 +193,8 @@ DASHBOARD_HTML = """
             <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Functional Keyword Miner • Local SEO • Intent Clustering</div>
         </div>
         <div class="nav-links">
-            <a href="/guide" target="_blank">📖 HOW TO USE (FIELD MANUAL)</a>
-            <a href="/export">⬇ EXPORT FULL CSV</a>
+            <a href="/export">⬇ EXPORT CSV</a>
+            <a href="/guide" target="_blank" class="help-btn" title="How to Use / Field Manual">?</a>
         </div>
     </div>
 
@@ -788,7 +791,7 @@ modular kitchen z -> zinc hinges, zero maintenance, z-profile handles...
         <section id="ch4">
             <h2>Chapter 4: Local Geo-Targeting for Trades & Execution</h2>
             <p>
-                For execution companies like SmartWood operating in Navi Mumbai, Mumbai, and Thane, generic nationwide searches are wasteful. A user in Delhi searching for "carpenter" will never hire a workshop in Vashi or Ghansoli.
+                For local contractors, trade professionals, and regional service businesses, generic nationwide searches are wasteful. A user in Delhi searching for "carpenter" will never hire a workshop in another state or distant district.
             </p>
             <p>
                 To generate high-yield local client leads:
@@ -964,7 +967,7 @@ def export_csv():
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=smartwood_keywords_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+        headers={"Content-Disposition": f"attachment;filename=keywords_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
     )
 
 if __name__ == "__main__":
