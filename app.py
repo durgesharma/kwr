@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import threading
 from datetime import datetime
 from flask import Flask, render_template_string, request, jsonify, Response, redirect, url_for
@@ -537,6 +538,13 @@ DASHBOARD_HTML = """
             user-select: none;
         }
         tr:hover td { background: #191b20; }
+        #keywordsTable tbody tr {
+            content-visibility: auto;
+            contain-intrinsic-size: auto 35px;
+        }
+        #keywordsTable tbody tr.row-selected td {
+            background: #1b222c;
+        }
 
         .kw-cell {
             color: var(--text-strong);
@@ -588,6 +596,32 @@ DASHBOARD_HTML = """
             padding: 2px 4px;
             border-radius: 3px;
             width: auto;
+        }
+
+        /* Square Row Delete Button */
+        .row-del-btn {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            padding: 0;
+            border-radius: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+        .row-del-btn:hover {
+            background: #2b1f1f;
+            border-color: #452b2b;
+            color: #d18a8a;
         }
 
         /* Toast Message */
@@ -774,7 +808,7 @@ DASHBOARD_HTML = """
             <span id="countSaved" style="display:none;">{{ saved_count }}</span>
         </button>
 
-        <a href="/export" class="metric-card export-card" title="Download CSV">
+        <a href="/export" class="metric-card export-card" title="Download CSV (Selected or Current View)" onclick="exportKeywordsCSV(event)">
             <span class="metric-lbl">Export</span>
             <span class="metric-val">
                 <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -782,6 +816,11 @@ DASHBOARD_HTML = """
             </span>
         </a>
     </div>
+
+    <form id="exportForm" method="POST" action="/export" style="display:none;">
+        <input type="hidden" name="keywords_json" id="exportKeywordsInput" value="">
+        <input type="hidden" name="export_mode" id="exportModeInput" value="all">
+    </form>
 
     <!-- HARVESTER PANEL -->
     <div class="card">
@@ -863,7 +902,7 @@ DASHBOARD_HTML = """
                 </div>
 
                 <div class="actions-right">
-                    <button type="button" class="btn btn-outline icon-btn" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                    <button type="button" class="btn btn-outline icon-btn" onclick="copyVisibleKeywords()" title="Copy selected or visible keywords"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                     <button type="button" class="btn btn-danger icon-btn" onclick="deleteSelected()" title="Delete selected keywords"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                 </div>
             </div>
@@ -885,7 +924,7 @@ DASHBOARD_HTML = """
                         <th>WORDS</th>
                         <th>PRIORITY</th>
                         <th>STATUS</th>
-                        <th style="width: 24px;"></th>
+                        <th style="width: 28px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -899,7 +938,7 @@ DASHBOARD_HTML = """
                         <td>
                             {% set is_bm = (r.get('Bookmarked') == '1' or r.get('Bookmarked') == 1) %}
                             <button type="button" class="star-btn {% if is_bm %}active{% endif %}" 
-                                    onclick="toggleBookmark('{{ r['Keyword'] }}', this)" 
+                                    onclick="toggleBookmark(this)" 
                                     title="Toggle save">
                                 <svg class="star-icon" viewBox="0 0 24 24" width="14" height="14" fill="{% if is_bm %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                             </button>
@@ -916,21 +955,21 @@ DASHBOARD_HTML = """
                         <td style="color: var(--text-dim); font-size: 11px;">{{ r.get('Collection Date', '-') }}</td>
                         <td>{{ r.get('Word Count', '-') }}</td>
                         <td>
-                            <select class="table-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Priority', this.value)">
+                            <select class="table-select" onchange="updateRowField(this, 'Priority', this.value)">
                                 <option value="High" {% if r.get('Priority') == 'High' %}selected{% endif %}>High</option>
                                 <option value="Medium" {% if r.get('Priority') == 'Medium' or not r.get('Priority') %}selected{% endif %}>Medium</option>
                                 <option value="Low" {% if r.get('Priority') == 'Low' %}selected{% endif %}>Low</option>
                             </select>
                         </td>
                         <td>
-                            <select class="table-select" onchange="updateRowField('{{ r['Keyword'] }}', 'Validation Status', this.value)">
+                            <select class="table-select" onchange="updateRowField(this, 'Validation Status', this.value)">
                                 <option value="Unverified" {% if r.get('Validation Status') == 'Unverified' or not r.get('Validation Status') %}selected{% endif %}>Unverified</option>
                                 <option value="Target" {% if r.get('Validation Status') == 'Target' %}selected{% endif %}>Target</option>
                                 <option value="Discard" {% if r.get('Validation Status') == 'Discard' %}selected{% endif %}>Discard</option>
                             </select>
                         </td>
                         <td>
-                            <button class="btn-text" style="color: #ef4444;" onclick="deleteSingle('{{ r['Keyword'] }}')">×</button>
+                            <button type="button" class="row-del-btn" onclick="deleteSingle(this)" title="Delete keyword">×</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -945,6 +984,109 @@ DASHBOARD_HTML = """
         let pollTimer = null;
         let filterDebounce = null;
         let currentTab = 'all';
+        let rowItems = [];
+        let rowMapByTr = new Map();
+        let lastSortedOrder = 'all';
+
+        function initRowCache() {
+            const tbody = document.querySelector("#keywordsTable tbody");
+            if (!tbody) return;
+            const trs = tbody.querySelectorAll("tr");
+            rowItems = [];
+            rowMapByTr.clear();
+            for (let i = 0; i < trs.length; i++) {
+                const tr = trs[i];
+                const cb = tr.querySelector(".row-select");
+                const rawKw = cb ? cb.value : (tr.querySelector(".kw-cell span") ? tr.querySelector(".kw-cell span").textContent.trim() : "");
+                const item = {
+                    tr: tr,
+                    cb: cb,
+                    index: parseInt(tr.getAttribute("data-index") || String(i + 1), 10),
+                    keyword: (tr.getAttribute("data-keyword") || rawKw.toLowerCase()),
+                    rawKeyword: rawKw,
+                    date: tr.getAttribute("data-date") || "",
+                    words: parseInt(tr.getAttribute("data-words") || "0", 10),
+                    bookmarked: tr.getAttribute("data-bookmarked") === "1",
+                    visible: true
+                };
+                rowItems.push(item);
+                rowMapByTr.set(tr, item);
+            }
+
+            tbody.addEventListener("change", (e) => {
+                if (e.target && e.target.classList.contains("row-select")) {
+                    const tr = e.target.closest("tr");
+                    if (tr) {
+                        tr.classList.toggle("row-selected", e.target.checked);
+                    }
+                    updateSelectionUI();
+                }
+            });
+        }
+
+        function updateStatsCounters() {
+            const total = rowItems.length;
+            let saved = 0;
+            for (let i = 0; i < rowItems.length; i++) {
+                if (rowItems[i].bookmarked) saved++;
+            }
+            const statTotal = document.getElementById("statTotal");
+            const countAll = document.getElementById("countAll");
+            const statSaved = document.getElementById("statSaved");
+            const countSaved = document.getElementById("countSaved");
+            if (statTotal) statTotal.textContent = total;
+            if (countAll) countAll.textContent = total;
+            if (statSaved) statSaved.textContent = saved;
+            if (countSaved) countSaved.textContent = saved;
+        }
+
+        function updateSelectionUI() {
+            let visibleCount = 0;
+            let selectedCount = 0;
+            for (let i = 0; i < rowItems.length; i++) {
+                const item = rowItems[i];
+                if (item.visible) {
+                    visibleCount++;
+                    if (item.cb && item.cb.checked) {
+                        selectedCount++;
+                    }
+                }
+            }
+            const label = document.getElementById("rowCountLabel");
+            if (label) {
+                if (selectedCount > 0) {
+                    label.innerHTML = `<span style="color: #93c5fd; font-weight: 600;">${selectedCount} selected</span> · ${visibleCount} rows`;
+                } else {
+                    label.textContent = `${visibleCount} rows`;
+                }
+            }
+            const selectAll = document.getElementById("selectAll");
+            if (selectAll) {
+                selectAll.checked = (visibleCount > 0 && selectedCount === visibleCount);
+                selectAll.indeterminate = (selectedCount > 0 && selectedCount < visibleCount);
+            }
+        }
+
+        function getSelectedVisibleItems() {
+            const selected = [];
+            for (let i = 0; i < rowItems.length; i++) {
+                const item = rowItems[i];
+                if (item.visible && item.cb && item.cb.checked) {
+                    selected.push(item);
+                }
+            }
+            return selected;
+        }
+
+        function getVisibleItems() {
+            const visible = [];
+            for (let i = 0; i < rowItems.length; i++) {
+                if (rowItems[i].visible) {
+                    visible.push(rowItems[i]);
+                }
+            }
+            return visible;
+        }
 
         function showToast(msg) {
             const t = document.getElementById("toast");
@@ -1011,8 +1153,13 @@ DASHBOARD_HTML = """
             }
         }
 
-        async function toggleBookmark(keyword, btn) {
-            const tr = btn.closest("tr");
+        async function toggleBookmark(btnOrKw, maybeBtn) {
+            const btn = maybeBtn || btnOrKw;
+            const tr = btn ? btn.closest("tr") : null;
+            const item = tr ? rowMapByTr.get(tr) : null;
+            const keyword = (typeof btnOrKw === "string") ? btnOrKw : (item ? item.rawKeyword : "");
+            if (!keyword) return;
+
             const res = await fetch("/api/toggle_bookmark", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1020,29 +1167,30 @@ DASHBOARD_HTML = """
             });
             const data = await res.json();
             if (data.success) {
-                const svg = btn.querySelector("svg");
-                const countSavedEl = document.getElementById("countSaved");
-                let savedCount = countSavedEl ? (parseInt(countSavedEl.innerText, 10) || 0) : 0;
-
+                const svg = btn ? btn.querySelector("svg") : null;
                 if (data.is_bookmarked) {
-                    btn.classList.add("active");
+                    if (btn) btn.classList.add("active");
                     if (svg) svg.setAttribute("fill", "currentColor");
                     if (tr) tr.setAttribute("data-bookmarked", "1");
-                    savedCount++;
+                    if (item) item.bookmarked = true;
                     showToast("Saved to bookmarks");
                 } else {
-                    btn.classList.remove("active");
+                    if (btn) btn.classList.remove("active");
                     if (svg) svg.setAttribute("fill", "none");
                     if (tr) tr.setAttribute("data-bookmarked", "0");
-                    savedCount = Math.max(0, savedCount - 1);
+                    if (item) item.bookmarked = false;
                     showToast("Removed bookmark");
-                    if (currentTab === 'saved' && tr) {
-                        tr.style.display = "none";
+                    if (currentTab === 'saved' && item) {
+                        item.visible = false;
+                        item.tr.style.display = "none";
+                        if (item.cb && item.cb.checked) {
+                            item.cb.checked = false;
+                            item.tr.classList.remove("row-selected");
+                        }
                     }
                 }
-                if (countSavedEl) countSavedEl.innerText = savedCount;
-                const statSaved = document.getElementById("statSaved");
-                if (statSaved) statSaved.innerText = savedCount;
+                updateStatsCounters();
+                updateSelectionUI();
             }
         }
 
@@ -1053,7 +1201,7 @@ DASHBOARD_HTML = """
             filterDebounce = setTimeout(() => {
                 applyFilterAndSort();
                 loader.style.display = "none";
-            }, 60);
+            }, 40);
         }
 
         async function startHarvest(e) {
@@ -1110,7 +1258,14 @@ DASHBOARD_HTML = """
             document.getElementById("progressText").innerText = "Stopping...";
         }
 
-        async function updateRowField(keyword, field, value) {
+        async function updateRowField(elOrKw, field, value) {
+            let keyword = elOrKw;
+            if (typeof elOrKw !== "string" && elOrKw && elOrKw.closest) {
+                const tr = elOrKw.closest("tr");
+                const item = rowMapByTr.get(tr);
+                keyword = item ? item.rawKeyword : "";
+            }
+            if (!keyword) return;
             await fetch("/api/update_row", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1119,126 +1274,203 @@ DASHBOARD_HTML = """
             showToast(`Updated ${field}`);
         }
 
-        async function deleteSingle(keyword) {
-            if (!confirm(`Delete '${keyword}'?`)) return;
-            await fetch("/api/delete_keywords", {
+        async function deleteSingle(btnOrKeyword) {
+            let item = null;
+            if (typeof btnOrKeyword === "string") {
+                item = rowItems.find(r => r.rawKeyword === btnOrKeyword);
+            } else if (btnOrKeyword && btnOrKeyword.closest) {
+                const tr = btnOrKeyword.closest("tr");
+                item = rowMapByTr.get(tr);
+            }
+            if (!item) return;
+
+            if (!confirm(`Delete '${item.rawKeyword}'?`)) return;
+            const res = await fetch("/api/delete_keywords", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ keywords: [keyword] })
+                body: JSON.stringify({ keywords: [item.rawKeyword] })
             });
-            location.reload();
+            const data = await res.json();
+            if (data.success) {
+                item.tr.remove();
+                rowMapByTr.delete(item.tr);
+                rowItems = rowItems.filter(r => r !== item);
+                updateStatsCounters();
+                updateSelectionUI();
+                showToast("Deleted keyword");
+            }
         }
 
         async function deleteSelected() {
-            const checked = Array.from(document.querySelectorAll(".row-select:checked")).map(cb => cb.value);
-            if (!checked.length) {
-                alert("No keywords selected.");
+            const selected = getSelectedVisibleItems();
+            if (!selected.length) {
+                showToast("Select keywords using checkboxes first");
                 return;
             }
-            if (!confirm(`Delete ${checked.length} selected keywords?`)) return;
-            await fetch("/api/delete_keywords", {
+            if (!confirm(`Delete ${selected.length} selected keyword${selected.length > 1 ? 's' : ''}?`)) return;
+            const kwsToDelete = selected.map(item => item.rawKeyword);
+            const res = await fetch("/api/delete_keywords", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ keywords: checked })
+                body: JSON.stringify({ keywords: kwsToDelete })
             });
-            location.reload();
+            const data = await res.json();
+            if (data.success) {
+                const selectedSet = new Set(selected);
+                for (let i = 0; i < selected.length; i++) {
+                    selected[i].tr.remove();
+                    rowMapByTr.delete(selected[i].tr);
+                }
+                rowItems = rowItems.filter(r => !selectedSet.has(r));
+                updateStatsCounters();
+                updateSelectionUI();
+                showToast(`Deleted ${selected.length} selected keyword${selected.length > 1 ? 's' : ''}`);
+            }
         }
 
         function toggleSelectAll(master) {
-            const cbs = document.querySelectorAll(".row-select");
-            cbs.forEach(cb => {
-                if (cb.closest("tr").style.display !== "none") {
-                    cb.checked = master.checked;
+            for (let i = 0; i < rowItems.length; i++) {
+                const item = rowItems[i];
+                if (item.visible && item.cb) {
+                    item.cb.checked = master.checked;
+                    item.tr.classList.toggle("row-selected", master.checked);
                 }
-            });
+            }
+            updateSelectionUI();
         }
 
-        function applyFilterAndSort() {
-            const query = document.getElementById("tableFilter").value.toLowerCase();
+        function applyFilterAndSort(forceSort = false) {
+            const query = (document.getElementById("tableFilter").value || "").trim().toLowerCase();
             const dateOrder = document.getElementById("filterDateOrder") ? document.getElementById("filterDateOrder").value : "all";
-            const minWords = parseInt(document.getElementById("filterWords").value, 10);
+            const minWords = parseInt(document.getElementById("filterWords").value, 10) || 0;
             const onlySaved = (currentTab === 'saved');
-
             const tbody = document.querySelector("#keywordsTable tbody");
-            const rows = Array.from(tbody.querySelectorAll("tr"));
-            let visibleCount = 0;
+            if (!tbody) return;
 
-            rows.forEach(tr => {
-                const kw = tr.getAttribute("data-keyword") || "";
-                const words = parseInt(tr.getAttribute("data-words") || "0", 10);
-                const isBookmarked = tr.getAttribute("data-bookmarked") === "1";
-
-                const matchQ = !query || kw.includes(query);
-                const matchWords = isNaN(minWords) || minWords === 0 || words >= minWords;
-                const matchSaved = !onlySaved || isBookmarked;
-
-                if (matchQ && matchWords && matchSaved) {
-                    tr.style.display = "";
-                    visibleCount++;
+            if (forceSort || dateOrder !== lastSortedOrder) {
+                if (dateOrder === "asc") {
+                    rowItems.sort((a, b) => a.date.localeCompare(b.date) || (a.index - b.index));
+                } else if (dateOrder === "desc") {
+                    rowItems.sort((a, b) => b.date.localeCompare(a.date) || (a.index - b.index));
                 } else {
-                    tr.style.display = "none";
+                    rowItems.sort((a, b) => a.index - b.index);
                 }
-            });
+                const frag = document.createDocumentFragment();
+                for (let i = 0; i < rowItems.length; i++) {
+                    frag.appendChild(rowItems[i].tr);
+                }
+                tbody.appendChild(frag);
+                lastSortedOrder = dateOrder;
+            }
 
-            // Sort rows by Date or preserve original All order
-            if (dateOrder === "asc") {
-                rows.sort((a, b) => {
-                    const dateA = a.getAttribute("data-date") || "";
-                    const dateB = b.getAttribute("data-date") || "";
-                    return dateA.localeCompare(dateB);
-                });
-                rows.forEach(tr => tbody.appendChild(tr));
-            } else if (dateOrder === "desc") {
-                rows.sort((a, b) => {
-                    const dateA = a.getAttribute("data-date") || "";
-                    const dateB = b.getAttribute("data-date") || "";
-                    return dateB.localeCompare(dateA);
-                });
-                rows.forEach(tr => tbody.appendChild(tr));
-            } else if (dateOrder === "all") {
-                rows.sort((a, b) => {
-                    const idxA = parseInt(a.getAttribute("data-index") || "0", 10);
-                    const idxB = parseInt(b.getAttribute("data-index") || "0", 10);
-                    return idxA - idxB;
-                });
-                rows.forEach(tr => tbody.appendChild(tr));
+            for (let i = 0; i < rowItems.length; i++) {
+                const item = rowItems[i];
+                const matchQ = !query || item.keyword.includes(query);
+                const matchWords = minWords === 0 || item.words >= minWords;
+                const matchSaved = !onlySaved || item.bookmarked;
+                const shouldShow = matchQ && matchWords && matchSaved;
+
+                if (item.visible !== shouldShow) {
+                    item.visible = shouldShow;
+                    item.tr.style.display = shouldShow ? "" : "none";
+                }
+                if (!shouldShow && item.cb && item.cb.checked) {
+                    item.cb.checked = false;
+                    item.tr.classList.remove("row-selected");
+                }
             }
 
             const arrow = document.getElementById("dateSortArrow");
             if (arrow) {
-                if (dateOrder === "asc") arrow.innerText = "↑";
-                else if (dateOrder === "desc") arrow.innerText = "↓";
-                else arrow.innerText = "↕";
+                if (dateOrder === "asc") arrow.textContent = "↑";
+                else if (dateOrder === "desc") arrow.textContent = "↓";
+                else arrow.textContent = "↕";
             }
 
-            document.getElementById("rowCountLabel").innerText = `${visibleCount} rows`;
+            updateSelectionUI();
+        }
+
+        function fallbackCopyText(text, toastMsg) {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand("copy");
+                showToast(toastMsg);
+            } catch (e) {
+                alert("Could not copy to clipboard.");
+            }
+            document.body.removeChild(ta);
         }
 
         function copyVisibleKeywords() {
-            const visibleRows = document.querySelectorAll("#keywordsTable tbody tr");
-            const kws = [];
-            visibleRows.forEach(tr => {
-                if (tr.style.display !== "none") {
-                    const textNode = tr.querySelector(".kw-cell span");
-                    const kwText = textNode ? textNode.innerText.trim() : "";
-                    if (kwText) kws.push(kwText);
-                }
-            });
+            const selected = getSelectedVisibleItems();
+            const targetItems = selected.length > 0 ? selected : getVisibleItems();
+            const kws = targetItems.map(item => item.rawKeyword).filter(Boolean);
 
             if (!kws.length) {
-                alert("No keywords visible to copy.");
+                showToast("No keywords to copy");
                 return;
             }
 
-            navigator.clipboard.writeText(kws.join("\\n")).then(() => {
-                showToast(`Copied ${kws.length} keywords for GKP`);
-            });
+            const label = selected.length > 0
+                ? `Copied ${kws.length} selected keyword${kws.length > 1 ? 's' : ''}`
+                : (currentTab === 'saved' ? `Copied ${kws.length} saved keyword${kws.length > 1 ? 's' : ''}` : `Copied ${kws.length} keyword${kws.length > 1 ? 's' : ''}`);
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(kws.join("\\n")).then(() => {
+                    showToast(label);
+                }).catch(() => {
+                    fallbackCopyText(kws.join("\\n"), label);
+                });
+            } else {
+                fallbackCopyText(kws.join("\\n"), label);
+            }
         }
 
-        // Initialize view based on URL if loaded with /saved
+        function exportKeywordsCSV(event) {
+            if (event) event.preventDefault();
+            const selected = getSelectedVisibleItems();
+            const targetItems = selected.length > 0 ? selected : getVisibleItems();
+
+            if (!targetItems.length) {
+                showToast("No keywords to export");
+                return;
+            }
+
+            const kws = targetItems.map(item => item.rawKeyword);
+            const mode = selected.length > 0 ? "selected" : (currentTab === "saved" ? "saved" : "all");
+
+            const kwInput = document.getElementById("exportKeywordsInput");
+            const modeInput = document.getElementById("exportModeInput");
+            const form = document.getElementById("exportForm");
+            if (kwInput && modeInput && form) {
+                kwInput.value = JSON.stringify(kws);
+                modeInput.value = mode;
+                form.submit();
+                if (selected.length > 0) {
+                    showToast(`Exporting ${kws.length} selected keyword${kws.length > 1 ? 's' : ''}...`);
+                } else if (currentTab === "saved") {
+                    showToast(`Exporting ${kws.length} saved keyword${kws.length > 1 ? 's' : ''}...`);
+                } else {
+                    showToast(`Exporting ${kws.length} keyword${kws.length > 1 ? 's' : ''}...`);
+                }
+            } else {
+                window.location.href = "/export?view=" + encodeURIComponent(currentTab);
+            }
+        }
+
+        // Initialize row cache and view state
         document.addEventListener("DOMContentLoaded", () => {
+            initRowCache();
             if (window.location.search.includes("view=saved") || window.location.pathname.includes("saved")) {
                 setViewTab('saved');
+            } else {
+                applyFilterAndSort();
             }
         });
     </script>
@@ -1257,20 +1489,21 @@ GUIDE_HTML = """
     <title>Field Manual: Google Autocomplete Keyword Intelligence</title>
     <style>
         body {
-            background-color: #fcfbf9;
-            color: #1a1a1a;
+            background-color: #16171a;
+            color: #c0c6cf;
             font-family: "Charter", "Bitstream Charter", "Georgia", "Cambria", serif;
             font-size: 18px;
             line-height: 1.65;
             margin: 0;
             padding: 40px 20px 80px 20px;
+            -webkit-font-smoothing: antialiased;
         }
         .container {
             max-width: 780px;
             margin: 0 auto;
         }
         header {
-            border-bottom: 2px solid #1a1a1a;
+            border-bottom: 2px solid #2c3038;
             padding-bottom: 20px;
             margin-bottom: 40px;
         }
@@ -1279,10 +1512,11 @@ GUIDE_HTML = """
             font-weight: 700;
             line-height: 1.2;
             margin-bottom: 8px;
+            color: #e1e5eb;
         }
         .subtitle {
             font-style: italic;
-            color: #4a4a4a;
+            color: #737a87;
             font-size: 1.05rem;
             margin-bottom: 12px;
         }
@@ -1294,17 +1528,19 @@ GUIDE_HTML = """
             margin-top: 15px;
         }
         .meta-nav a {
-            color: #1a1a1a;
+            color: #a1c7aa;
             font-weight: bold;
             text-decoration: underline;
         }
         .toc {
-            background: #f4f1ea;
-            border-left: 4px solid #1a1a1a;
+            background: #1e2025;
+            border: 1px solid #2c3038;
+            border-left: 4px solid #3f614d;
             padding: 20px 25px;
             margin: 35px 0 45px 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-size: 14px;
+            border-radius: 4px;
         }
         .toc h3 {
             margin-top: 0;
@@ -1312,6 +1548,7 @@ GUIDE_HTML = """
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-size: 13px;
+            color: #e1e5eb;
         }
         .toc ol {
             margin: 0;
@@ -1321,23 +1558,32 @@ GUIDE_HTML = """
             margin-bottom: 6px;
         }
         .toc a {
-            color: #1a1a1a;
+            color: #c0c6cf;
             text-decoration: none;
         }
         .toc a:hover {
+            color: #e1e5eb;
             text-decoration: underline;
         }
         h2 {
             font-size: 1.5rem;
-            border-bottom: 1px solid #ccc;
+            border-bottom: 1px solid #2c3038;
             padding-bottom: 6px;
             margin-top: 45px;
             margin-bottom: 16px;
+            color: #e1e5eb;
         }
         h3 {
             font-size: 1.2rem;
             margin-top: 25px;
             margin-bottom: 10px;
+            color: #e1e5eb;
+        }
+        strong {
+            color: #e1e5eb;
+        }
+        a {
+            color: #93c5fd;
         }
         p {
             margin-bottom: 18px;
@@ -1352,23 +1598,25 @@ GUIDE_HTML = """
         }
         code, pre {
             font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
-            background: #eeebe3;
+            background: #1e2025;
+            color: #e1e5eb;
             border-radius: 3px;
             font-size: 14px;
         }
         code {
             padding: 2px 6px;
+            border: 1px solid #2c3038;
         }
         pre {
             padding: 14px;
             overflow-x: auto;
-            border: 1px solid #dcd7cc;
+            border: 1px solid #2c3038;
             margin-bottom: 20px;
             line-height: 1.4;
         }
         hr {
             border: 0;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #2c3038;
             margin: 40px 0;
         }
     </style>
@@ -1718,24 +1966,55 @@ def api_sheets_sync():
     res = sync_keywords_to_sheet(sheet_url, creds_path, worksheet_name)
     return jsonify(res)
 
-@app.route("/export")
+@app.route("/export", methods=["GET", "POST"])
 def export_csv():
     active_sheet = get_active_sheet()
     rows = load_all_keywords(active_sheet)
     if not rows:
         return "No keywords found to export.", 404
 
-    output = io.StringIO()
     headers = list(rows[0].keys())
+    export_rows = rows
+    suffix = ""
+
+    if request.method == "POST":
+        kw_json = request.form.get("keywords_json", "")
+        export_mode = request.form.get("export_mode", "all")
+        if not kw_json and request.is_json:
+            body = request.get_json(silent=True) or {}
+            if "keywords" in body:
+                kw_json = json.dumps(body["keywords"])
+            export_mode = body.get("export_mode", export_mode)
+
+        if kw_json:
+            try:
+                selected_kws = json.loads(kw_json)
+                if isinstance(selected_kws, list):
+                    row_map = {r.get("Keyword", "").strip().lower(): r for r in rows}
+                    export_rows = [row_map[k.strip().lower()] for k in selected_kws if isinstance(k, str) and k.strip().lower() in row_map]
+            except Exception:
+                pass
+
+        if export_mode == "selected":
+            suffix = "_selected"
+        elif export_mode == "saved":
+            suffix = "_saved"
+    else:
+        view_param = request.args.get("view", "").strip().lower()
+        if view_param == "saved":
+            export_rows = [r for r in rows if str(r.get("Bookmarked", "0")) in ("1", "true", "True", "yes")]
+            suffix = "_saved"
+
+    output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=headers)
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(export_rows)
 
     clean_base = active_sheet.replace(".csv", "")
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename={clean_base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+        headers={"Content-Disposition": f"attachment;filename={clean_base}{suffix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
     )
 
 if __name__ == "__main__":

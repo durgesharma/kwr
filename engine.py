@@ -85,14 +85,19 @@ def create_new_sheet(name):
     return filename
 
 
+_verified_sheets = set()
+
 def init_csv(filename=None):
     """Initializes the CSV database with standard columns if not present."""
     target_file = filename or get_active_sheet()
+    if target_file in _verified_sheets and os.path.exists(target_file):
+        return
     with csv_lock:
         if not os.path.exists(target_file):
             with open(target_file, mode='w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(COLUMNS)
+            _verified_sheets.add(target_file)
         else:
             # Ensure Bookmarked column exists in header if missing
             try:
@@ -113,6 +118,7 @@ def init_csv(filename=None):
                         writer = csv.writer(f)
                         writer.writerow(header)
                         writer.writerows(rows)
+                _verified_sheets.add(target_file)
             except Exception as e:
                 print(f"[Engine] Header check error on {target_file}: {e}")
 
