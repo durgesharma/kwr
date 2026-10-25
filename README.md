@@ -4,7 +4,7 @@ Automated Google Autocomplete keyword expansion, search intent classification, a
 
 ---
 
-## ⚡ Zero-Friction Quick Start
+## Zero-Friction Quick Start
 
 ### 1. One-Click Launch (Recommended)
 - **Windows**: Double-click **`start.bat`** (or type `kwr start`).
@@ -33,7 +33,7 @@ Open **`http://127.0.0.1:5000`** in your browser.
 
 ---
 
-## 🛠️ CLI Operations & `kwr help`
+## CLI Operations & kwr help
 
 Run the built-in CLI assistant anytime for instructions and diagnostics:
 ```bash
@@ -63,7 +63,7 @@ python kwr.py harvest "wardrobe contractor" --mode deep_harvest
 
 ---
 
-## 📊 Google Sheets Live Synchronization (Optional)
+## Google Sheets Live Synchronization (Optional)
 
 You can sync discovered keywords directly to your own Google Sheet alongside the local CSV database.
 
@@ -76,7 +76,7 @@ You can sync discovered keywords directly to your own Google Sheet alongside the
    - Create a new Google Spreadsheet in your Google Drive.
    - Click **Share** and add your Service Account email (e.g. `your-app@...gserviceaccount.com`) with **Editor** permissions.
 3. **Connect & Sync**:
-   - Open the web dashboard (`http://127.0.0.1:5000`), click **📊 GOOGLE SHEET**, paste your Spreadsheet URL, and click **Sync to Google Sheet**.
+   - Open the web dashboard (`http://127.0.0.1:5000`), click **Google Sheet**, paste your Spreadsheet URL, and click **Sync to Google Sheet**.
    - Or run from terminal:
      ```bash
      python kwr.py sync-sheets --url "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit"
@@ -84,5 +84,5 @@ You can sync discovered keywords directly to your own Google Sheet alongside the
 
 ---
 
-## 📖 Built-in Field Manual
-Click the **`?`** button in the top-right corner of the web dashboard or navigate to **`/guide`** to read the complete field manual covering autocomplete algorithms, search intent classification, and search volume extraction via Google Keyword Planner.
+## Built-in Field Manual
+Click the **`?`** icon in the top-right corner of the web dashboard or navigate to **`/guide`** to read the complete field manual covering autocomplete algorithms, search intent classification, and search volume extraction via Google Keyword Planner.

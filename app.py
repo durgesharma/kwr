@@ -482,6 +482,16 @@ DASHBOARD_HTML = """
             box-shadow: 0 3px 8px rgba(0,0,0,0.4);
         }
 
+        /* Icons */
+        .icon {
+            vertical-align: -2px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .icon-left {
+            margin-right: 5px;
+        }
+
         /* Responsive Mobile Tweak */
         @media (max-width: 768px) {
             body { padding: 8px; font-size: 12px; }
@@ -503,7 +513,7 @@ DASHBOARD_HTML = """
             
             <!-- Quick inline sheet switcher -->
             <div class="sheet-control">
-                <span>📄</span>
+                <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <select id="sheetSelect" onchange="switchSheet(this.value)">
                     {% for s in available_sheets %}
                     <option value="{{ s }}" {% if s == active_sheet %}selected{% endif %}>{{ s }}</option>
@@ -515,15 +525,15 @@ DASHBOARD_HTML = """
 
         <div class="topbar-right">
             {% if is_saved_view %}
-                <a href="/" class="nav-tab">← All Keywords ({{ all_total_count }})</a>
-                <span class="nav-tab saved-active">★ Saved ({{ saved_count }})</span>
+                <a href="/" class="nav-tab"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> All Keywords ({{ all_total_count }})</a>
+                <span class="nav-tab saved-active"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Saved ({{ saved_count }})</span>
             {% else %}
                 <span class="nav-tab active">All ({{ total_count }})</span>
-                <a href="/saved" class="nav-tab">★ Saved ({{ saved_count }})</a>
+                <a href="/saved" class="nav-tab"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Saved ({{ saved_count }})</a>
             {% endif %}
             
-            <a href="/export" class="nav-tab" title="Download CSV">⬇ CSV</a>
-            <a href="/guide" target="_blank" class="nav-tab" title="How to use manual">?</a>
+            <a href="/export" class="nav-tab" title="Download CSV"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</a>
+            <a href="/guide" target="_blank" class="nav-tab" title="How to use manual"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></a>
         </div>
     </div>
 
@@ -564,13 +574,13 @@ DASHBOARD_HTML = """
                     <option value="questions">Questions: How, What, Why, Which</option>
                     <option value="prepositions">Prepositions: For, With, Vs, Near</option>
                     <option value="numbers">Numbers: [Seed + 0-9] (Sizes, BHK)</option>
-                    <option value="deep_harvest">🔥 Full Deep Harvest (All Modules)</option>
+                    <option value="deep_harvest">Full Deep Harvest (All Modules)</option>
                     <option value="standard">Standard (Direct Suggestions)</option>
                 </select>
-                <button type="submit" class="btn btn-green" id="runBtn">⚡ Harvest</button>
+                <button type="submit" class="btn btn-green" id="runBtn"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Harvest</button>
             </div>
 
-            <div class="options-toggle" onclick="toggleOptions()">⚙ Target Options (Region, Locations, Exclude) ▼</div>
+            <div class="options-toggle" onclick="toggleOptions()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Target Options (Region, Locations, Exclude)</div>
 
             <div class="harvest-options" id="harvestOptions">
                 <div>
@@ -643,8 +653,8 @@ DASHBOARD_HTML = """
             </div>
 
             <div class="actions-group">
-                <button class="btn btn-outline" style="height: 33px; font-size: 11px;" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner">📋 Copy List</button>
-                <button class="btn btn-danger" style="height: 33px; font-size: 11px;" onclick="deleteSelected()">🗑 Delete</button>
+                <button class="btn btn-outline" style="height: 33px; font-size: 11px;" onclick="copyVisibleKeywords()" title="Copy clean list for Google Keyword Planner"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy List</button>
+                <button class="btn btn-danger" style="height: 33px; font-size: 11px;" onclick="deleteSelected()"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
                 <span id="rowCountLabel" style="font-size: 11px; color: var(--text-dim); margin-left: 4px;">{{ total_count }} rows</span>
             </div>
         </div>
@@ -654,7 +664,7 @@ DASHBOARD_HTML = """
                 <thead>
                     <tr>
                         <th style="width: 24px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
-                        <th style="width: 32px;" title="Bookmark">★</th>
+                        <th style="width: 32px;" title="Bookmark"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></th>
                         <th>KEYWORD</th>
                         <th>INTENT</th>
                         <th>CLUSTER</th>
@@ -677,7 +687,7 @@ DASHBOARD_HTML = """
                             <button class="star-btn {% if is_bm %}active{% endif %}" 
                                     onclick="toggleBookmark('{{ r['Keyword'] }}', this)" 
                                     title="Toggle save">
-                                {% if is_bm %}★{% else %}☆{% endif %}
+                                <svg class="star-icon" viewBox="0 0 24 24" width="14" height="14" fill="{% if is_bm %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                             </button>
                         </td>
                         <td>
@@ -780,13 +790,14 @@ DASHBOARD_HTML = """
             });
             const data = await res.json();
             if (data.success) {
+                const svg = btn.querySelector("svg");
                 if (data.is_bookmarked) {
                     btn.classList.add("active");
-                    btn.innerText = "★";
+                    if (svg) svg.setAttribute("fill", "currentColor");
                     showToast("Saved to bookmarks");
                 } else {
                     btn.classList.remove("active");
-                    btn.innerText = "☆";
+                    if (svg) svg.setAttribute("fill", "none");
                     showToast("Removed bookmark");
                     if (window.location.pathname === "/saved") {
                         btn.closest("tr").remove();
@@ -1236,7 +1247,7 @@ modular kitchen z -> zinc hinges, zero maintenance, z-profile handles...
             </p>
             <ol>
                 <li>In the KWR Dashboard, apply your desired filters (e.g., select <em>Transactional</em> intent and <em>High</em> priority).</li>
-                <li>Click the button <strong>"📋 Copy List"</strong>. The dashboard immediately copies the exact keyword list to your operating system clipboard.</li>
+                <li>Click the button <strong>"Copy List"</strong>. The dashboard immediately copies the exact keyword list to your operating system clipboard.</li>
                 <li>Open <a href="https://ads.google.com/home/tools/keyword-planner/" target="_blank">Google Keyword Planner</a> (free with any Google Ads account).</li>
                 <li>Select <strong>"Get search volume and forecasts"</strong>.</li>
                 <li>Paste your copied clipboard list directly into the box and press <strong>"Get Started"</strong>.</li>
