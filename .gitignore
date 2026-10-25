@@ -10,3 +10,6 @@ ENV/
 .env
 .vscode/
 .idea/
+active_sheet.txt
+credentials.json
+sheets_config.json

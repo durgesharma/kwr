@@ -5,7 +5,9 @@ from datetime import datetime
 from flask import Flask, render_template_string, request, jsonify, Response, redirect, url_for
 from engine import (
     load_all_keywords, execute_harvest, update_row_in_csv, 
-    delete_keywords_from_csv, init_csv, CSV_FILE
+    delete_keywords_from_csv, init_csv, get_active_sheet, 
+    set_active_sheet, list_available_sheets, create_new_sheet, 
+    toggle_bookmark_in_csv, COLUMNS
 )
 from sheets_sync import get_sheets_status, sync_keywords_to_sheet, save_sheets_config
 
@@ -121,9 +123,9 @@ DASHBOARD_HTML = """
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background-color: var(--bg); color: var(--text); padding: 16px; font-size: 13px; line-height: 1.4; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
         .header h1 { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
-        .header .nav-links { display: flex; align-items: center; gap: 8px; }
+        .header .nav-links { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .header .nav-links a { color: #58a6ff; text-decoration: none; font-size: 12px; border: 1px solid var(--border); padding: 6px 12px; border-radius: 4px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
         .header .nav-links a:hover { background: #22272e; color: #79c0ff; }
         .header .nav-links a.help-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 14px; font-weight: 700; color: #e6edf3; background: #21262d; border: 1px solid #30363d; }
@@ -181,11 +183,16 @@ DASHBOARD_HTML = """
 
         select.inline-select { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; font-size: 11px; padding: 2px 4px; border-radius: 3px; }
         
+        /* Bookmark button */
+        .bm-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; cursor: pointer; }
+        .bm-btn:hover { color: #fff; border-color: #58a6ff; }
+        .bm-btn.bm-active { background: rgba(210, 153, 34, 0.15); border-color: #d29922; color: #d29922; font-weight: bold; }
+
         #toast {
             position: fixed; bottom: 20px; right: 20px; background: #238636; color: #fff; padding: 10px 16px; border-radius: 4px; display: none; z-index: 99; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
-        /* Sheets Modal */
+        /* Modal Overlay */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100;
         }
@@ -198,6 +205,9 @@ DASHBOARD_HTML = """
         .setup-steps ol { padding-left: 18px; }
         .setup-steps li { margin-bottom: 4px; }
         .setup-steps code { color: #58a6ff; }
+
+        .sheet-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #0d1117; border: 1px solid #21262d; border-radius: 4px; margin-bottom: 6px; font-size: 12px; }
+        .sheet-item.active { border-color: #238636; }
     </style>
 </head>
 <body>
@@ -205,9 +215,18 @@ DASHBOARD_HTML = """
     <div class="header">
         <div>
             <h1>KWR ENGINE // Google Autocomplete Intelligence</h1>
-            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Functional Keyword Miner • Local SEO • Intent Clustering</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
+                Active Sheet: <strong style="color: #58a6ff;">{{ active_sheet }}</strong>
+                {% if is_saved_view %} &bull; <span style="color: #d29922; font-weight: bold;">★ SAVED / BOOKMARKS VIEW</span>{% endif %}
+            </div>
         </div>
         <div class="nav-links">
+            {% if is_saved_view %}
+                <a href="/" style="color: #79c0ff; font-weight: bold;">← ALL KEYWORDS</a>
+            {% else %}
+                <a href="/saved" style="color: #d29922; font-weight: bold;">★ SAVED ({{ saved_count }})</a>
+            {% endif %}
+            <button class="btn btn-sm" onclick="openSheetSelectorModal()" style="background: #21262d; border: 1px solid #30363d; color: #79c0ff;">📁 SHEETS</button>
             <button class="btn btn-sm" onclick="openSheetsModal()" style="background: #21262d; border: 1px solid #30363d; color: #58a6ff;">📊 GOOGLE SHEET</button>
             <a href="/export">⬇ EXPORT CSV</a>
             <a href="/guide" target="_blank" class="help-btn" title="How to Use / Field Manual">?</a>
@@ -221,6 +240,10 @@ DASHBOARD_HTML = """
             <div class="val" id="statTotal">{{ total_count }}</div>
         </div>
         <div class="stat-card">
+            <div class="label">Saved (Bookmarked)</div>
+            <div class="val" style="color: #d29922;">{{ saved_count }}</div>
+        </div>
+        <div class="stat-card">
             <div class="label">Transactional (Buyer)</div>
             <div class="val" style="color: #d29922;">{{ tx_count }}</div>
         </div>
@@ -232,15 +255,12 @@ DASHBOARD_HTML = """
             <div class="label">Informational (Guides/Q)</div>
             <div class="val" style="color: #3fb950;">{{ info_count }}</div>
         </div>
-        <div class="stat-card">
-            <div class="label">Average Words</div>
-            <div class="val" style="color: #e6edf3;">{{ avg_words }}</div>
-        </div>
     </div>
 
+    {% if not is_saved_view %}
     <!-- HARVESTER CONTROL PANEL -->
     <div class="panel">
-        <div class="panel-title">Keyword Discovery Runner</div>
+        <div class="panel-title">Keyword Discovery Runner (Target Sheet: {{ active_sheet }})</div>
         <form id="harvestForm" onsubmit="startHarvest(event)">
             <div class="grid-form">
                 <div class="form-group">
@@ -287,6 +307,7 @@ DASHBOARD_HTML = """
             </div>
         </form>
     </div>
+    {% endif %}
 
     <!-- LIVE PROGRESS BOX -->
     <div id="progressContainer">
@@ -307,7 +328,10 @@ DASHBOARD_HTML = """
     <div class="panel" style="padding: 10px;">
         <div class="controls-bar">
             <div class="left-controls">
-                <input type="text" id="tableFilter" placeholder="Filter keywords..." style="width: 220px;" onkeyup="applyFilter()">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="text" id="tableFilter" placeholder="Filter keywords in sheet..." style="width: 230px;" oninput="triggerFilterLoading()">
+                    <span id="searchLoading" style="display: none; position: absolute; right: 8px; font-size: 10px; color: #58a6ff;">filtering...</span>
+                </div>
                 <select id="filterIntent" onchange="applyFilter()" style="width: 140px;">
                     <option value="">All Intents</option>
                     <option value="Transactional">Transactional</option>
@@ -339,6 +363,7 @@ DASHBOARD_HTML = """
                 <thead>
                     <tr>
                         <th style="width: 28px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                        <th style="width: 60px;">SAVE</th>
                         <th>KEYWORD</th>
                         <th>INTENT</th>
                         <th>CLUSTER</th>
@@ -354,8 +379,17 @@ DASHBOARD_HTML = """
                     <tr data-keyword="{{ r['Keyword'] | lower }}" 
                         data-intent="{{ r.get('Search Intent', 'Commercial') }}" 
                         data-cluster="{{ r.get('Topic Cluster', '') }}" 
-                        data-words="{{ r.get('Word Count', '1') }}">
+                        data-words="{{ r.get('Word Count', '1') }}"
+                        data-bookmarked="{{ r.get('Bookmarked', '0') }}">
                         <td><input type="checkbox" class="row-select" value="{{ r['Keyword'] }}"></td>
+                        <td>
+                            {% set is_bm = (r.get('Bookmarked') == '1' or r.get('Bookmarked') == 1) %}
+                            <button class="btn btn-sm bm-btn {% if is_bm %}bm-active{% endif %}" 
+                                    onclick="toggleBookmark('{{ r['Keyword'] }}', this)" 
+                                    title="Save to Bookmarks">
+                                {% if is_bm %}★ Saved{% else %}☆ Save{% endif %}
+                            </button>
+                        </td>
                         <td>
                             <strong>{{ r['Keyword'] }}</strong>
                             <a class="serp-link" href="https://www.google.com/search?q={{ r['Keyword'] | urlencode }}" target="_blank" title="Check Live Google SERP">↗ SERP</a>
@@ -398,7 +432,44 @@ DASHBOARD_HTML = """
         </div>
     </div>
 
-    <!-- GOOGLE SHEETS MODAL -->
+    <!-- SHEET SELECTOR & CREATOR MODAL -->
+    <div id="sheetSelectorModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>
+                <span>📁 Manage Local Sheets on Device</span>
+                <button class="close-btn" onclick="closeSheetSelectorModal()">×</button>
+            </h3>
+            
+            <p style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
+                Sheets stay stored locally as <code>.csv</code> files inside this app on your phone. You can create separate sheets for different niches, clients, or projects.
+            </p>
+
+            <div style="font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 6px;">Available Sheets on Device:</div>
+            <div id="sheetsListContainer" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;">
+                {% for s in available_sheets %}
+                <div class="sheet-item {% if s == active_sheet %}active{% endif %}">
+                    <div>
+                        <strong>{{ s }}</strong>
+                        {% if s == active_sheet %} <span style="color: #238636; font-size: 10px;">(ACTIVE)</span>{% endif %}
+                    </div>
+                    {% if s != active_sheet %}
+                    <button class="btn btn-sm" onclick="switchSheet('{{ s }}')">Select</button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 12px;">
+                <label style="font-size: 11px; font-weight: bold; color: #58a6ff;">Create New Sheet on Phone:</label>
+                <div style="display: flex; gap: 8px; margin-top: 6px;">
+                    <input type="text" id="newSheetNameInput" placeholder="e.g. interior_thane or wardrobe_keywords">
+                    <button class="btn btn-sm btn-green" onclick="createNewSheet()">+ CREATE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GOOGLE SHEETS LIVE SYNC MODAL -->
     <div id="sheetsModal" class="modal-overlay">
         <div class="modal-card">
             <h3>
@@ -446,12 +517,91 @@ DASHBOARD_HTML = """
 
     <script>
         let pollTimer = null;
+        let filterDebounce = null;
 
         function showToast(msg) {
             const t = document.getElementById("toast");
             t.innerText = msg;
             t.style.display = "block";
             setTimeout(() => { t.style.display = "none"; }, 2500);
+        }
+
+        // Bookmark toggle
+        async function toggleBookmark(keyword, btn) {
+            const res = await fetch("/api/toggle_bookmark", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ keyword })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.is_bookmarked) {
+                    btn.classList.add("bm-active");
+                    btn.innerText = "★ Saved";
+                    showToast(`Saved '${keyword}' to bookmarks!`);
+                } else {
+                    btn.classList.remove("bm-active");
+                    btn.innerText = "☆ Save";
+                    showToast(`Removed '${keyword}' from bookmarks.`);
+                    // If on /saved view, hide row immediately
+                    if (window.location.pathname === "/saved") {
+                        btn.closest("tr").remove();
+                    }
+                }
+            }
+        }
+
+        // Sheet Selector Modal
+        function openSheetSelectorModal() {
+            document.getElementById("sheetSelectorModal").style.display = "flex";
+        }
+
+        function closeSheetSelectorModal() {
+            document.getElementById("sheetSelectorModal").style.display = "none";
+        }
+
+        async function switchSheet(sheetName) {
+            const res = await fetch("/api/switch_sheet", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sheet_name: sheetName })
+            });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            }
+        }
+
+        async function createNewSheet() {
+            const input = document.getElementById("newSheetNameInput");
+            const name = input.value.trim();
+            if (!name) {
+                alert("Please enter a name for the new sheet.");
+                return;
+            }
+            const res = await fetch("/api/create_sheet", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sheet_name: name })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Created and switched to ${data.sheet_name}`);
+                location.reload();
+            } else {
+                alert(data.message || "Failed to create sheet.");
+            }
+        }
+
+        // Filtering with loading indicator
+        function triggerFilterLoading() {
+            const loader = document.getElementById("searchLoading");
+            loader.style.display = "inline";
+            if (filterDebounce) clearTimeout(filterDebounce);
+            filterDebounce = setTimeout(() => {
+                applyFilter();
+                loader.style.display = "none";
+            }, 80);
         }
 
         async function startHarvest(e) {
@@ -984,11 +1134,9 @@ job, jobs, salary, vacancy, vacancies, pdf, download, course, training, exam, sy
 
 # ==================== ROUTES ====================
 
-@app.route("/")
-def index():
-    rows = load_all_keywords()
+def get_stats_and_data(rows):
     total_count = len(rows)
-    
+    saved_count = sum(1 for r in rows if str(r.get("Bookmarked", "0")) in ("1", "true", "True", "yes"))
     tx_count = sum(1 for r in rows if r.get("Search Intent") == "Transactional")
     comm_count = sum(1 for r in rows if r.get("Search Intent") == "Commercial")
     info_count = sum(1 for r in rows if r.get("Search Intent") == "Informational")
@@ -1009,16 +1157,50 @@ def index():
             pass
 
     avg_words = round(total_words / valid_word_rows, 1) if valid_word_rows > 0 else 0
+    return {
+        "total_count": total_count,
+        "saved_count": saved_count,
+        "tx_count": tx_count,
+        "comm_count": comm_count,
+        "info_count": info_count,
+        "avg_words": avg_words,
+        "clusters": sorted(list(clusters))
+    }
+
+@app.route("/")
+def index():
+    active_sheet = get_active_sheet()
+    rows = load_all_keywords(active_sheet)
+    stats = get_stats_and_data(rows)
+    available_sheets = list_available_sheets()
 
     return render_template_string(
         DASHBOARD_HTML,
         rows=rows,
-        total_count=total_count,
-        tx_count=tx_count,
-        comm_count=comm_count,
-        info_count=info_count,
-        avg_words=avg_words,
-        clusters=sorted(list(clusters))
+        active_sheet=active_sheet,
+        available_sheets=available_sheets,
+        is_saved_view=False,
+        **stats
+    )
+
+@app.route("/saved")
+def saved_view():
+    active_sheet = get_active_sheet()
+    all_rows = load_all_keywords(active_sheet)
+    # Filter only bookmarked rows
+    saved_rows = [r for r in all_rows if str(r.get("Bookmarked", "0")) in ("1", "true", "True", "yes")]
+    stats = get_stats_and_data(all_rows)
+    # override total count for saved view
+    stats["total_count"] = len(saved_rows)
+    available_sheets = list_available_sheets()
+
+    return render_template_string(
+        DASHBOARD_HTML,
+        rows=saved_rows,
+        active_sheet=active_sheet,
+        available_sheets=available_sheets,
+        is_saved_view=True,
+        **stats
     )
 
 @app.route("/guide")
@@ -1050,6 +1232,34 @@ def api_stop():
     stopped = harvest_manager.stop_job()
     return jsonify({"success": stopped})
 
+@app.route("/api/toggle_bookmark", methods=["POST"])
+def api_toggle_bookmark():
+    data = request.get_json() or {}
+    kw = data.get("keyword")
+    if not kw:
+        return jsonify({"success": False, "message": "Keyword required"}), 400
+    
+    is_bm = toggle_bookmark_in_csv(kw)
+    return jsonify({"success": True, "is_bookmarked": is_bm})
+
+@app.route("/api/switch_sheet", methods=["POST"])
+def api_switch_sheet():
+    data = request.get_json() or {}
+    name = data.get("sheet_name")
+    if not name:
+        return jsonify({"success": False, "message": "Sheet name required"}), 400
+    active = set_active_sheet(name)
+    return jsonify({"success": True, "active_sheet": active})
+
+@app.route("/api/create_sheet", methods=["POST"])
+def api_create_sheet():
+    data = request.get_json() or {}
+    name = data.get("sheet_name")
+    if not name:
+        return jsonify({"success": False, "message": "Sheet name required"}), 400
+    created = create_new_sheet(name)
+    return jsonify({"success": True, "sheet_name": created})
+
 @app.route("/api/update_row", methods=["POST"])
 def api_update_row():
     data = request.get_json() or {}
@@ -1072,24 +1282,6 @@ def api_delete_keywords():
     count = delete_keywords_from_csv(kws)
     return jsonify({"success": True, "deleted": count})
 
-@app.route("/export")
-def export_csv():
-    rows = load_all_keywords()
-    if not rows:
-        return "No keywords found to export.", 404
-
-    output = io.StringIO()
-    headers = list(rows[0].keys())
-    writer = csv.DictWriter(output, fieldnames=headers)
-    writer.writeheader()
-    writer.writerows(rows)
-
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=keywords_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
-    )
-
 @app.route("/api/sheets_status")
 def api_sheets_status():
     return jsonify(get_sheets_status())
@@ -1103,6 +1295,26 @@ def api_sheets_sync():
     
     res = sync_keywords_to_sheet(sheet_url, creds_path, worksheet_name)
     return jsonify(res)
+
+@app.route("/export")
+def export_csv():
+    active_sheet = get_active_sheet()
+    rows = load_all_keywords(active_sheet)
+    if not rows:
+        return "No keywords found to export.", 404
+
+    output = io.StringIO()
+    headers = list(rows[0].keys())
+    writer = csv.DictWriter(output, fieldnames=headers)
+    writer.writeheader()
+    writer.writerows(rows)
+
+    clean_base = active_sheet.replace(".csv", "")
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename={clean_base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+    )
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)

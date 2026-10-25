@@ -7,13 +7,14 @@ import requests
 from datetime import datetime
 from threading import Lock
 
-CSV_FILE = "smartwood_keywords.csv"
+DEFAULT_CSV = "smartwood_keywords.csv"
+ACTIVE_SHEET_FILE = "active_sheet.txt"
 csv_lock = Lock()
 
 COLUMNS = [
     "Keyword", "Source", "Discovered From", "Collection Date", 
     "Search Intent", "Topic Cluster", "Location", 
-    "Word Count", "Validation Status", "Priority", "Target Page"
+    "Word Count", "Validation Status", "Priority", "Target Page", "Bookmarked"
 ]
 
 DEFAULT_NEGATIVES = {"job", "jobs", "salary", "vacancy", "pdf", "course", "free download", "app download", "recruitment", "login"}
@@ -36,13 +37,85 @@ NUMBER_MODIFIERS = [str(n) for n in range(0, 10)]
 ALPHABET = list(string.ascii_lowercase)
 
 
-def init_csv():
-    """Initializes the CSV database with the required headers if it does not exist."""
+def get_active_sheet():
+    """Gets the filename of the active local sheet."""
+    if os.path.exists(ACTIVE_SHEET_FILE):
+        try:
+            with open(ACTIVE_SHEET_FILE, "r", encoding="utf-8") as f:
+                name = f.read().strip()
+                if name and os.path.exists(name):
+                    return name
+        except:
+            pass
+    return DEFAULT_CSV
+
+
+def set_active_sheet(sheet_filename):
+    """Sets the active local sheet file."""
+    clean_name = os.path.basename(sheet_filename.strip())
+    if not clean_name.endswith(".csv"):
+        clean_name += ".csv"
+    with open(ACTIVE_SHEET_FILE, "w", encoding="utf-8") as f:
+        f.write(clean_name)
+    init_csv(clean_name)
+    return clean_name
+
+
+def list_available_sheets():
+    """Lists all CSV keyword sheets in the project directory."""
+    sheets = []
+    try:
+        for f in os.listdir("."):
+            if f.endswith(".csv") and not f.startswith("."):
+                sheets.append(f)
+    except:
+        pass
+    if DEFAULT_CSV not in sheets and os.path.exists(DEFAULT_CSV):
+        sheets.append(DEFAULT_CSV)
+    return sorted(list(set(sheets)))
+
+
+def create_new_sheet(name):
+    """Creates a new CSV sheet with standard headers and sets it as active."""
+    clean = re.sub(r'[^a-zA-Z0-9_\-]', '_', name.strip()).strip('_')
+    if not clean:
+        clean = f"keywords_{int(time.time())}"
+    filename = f"{clean}.csv"
+    init_csv(filename)
+    set_active_sheet(filename)
+    return filename
+
+
+def init_csv(filename=None):
+    """Initializes the CSV database with standard columns if not present."""
+    target_file = filename or get_active_sheet()
     with csv_lock:
-        if not os.path.exists(CSV_FILE):
-            with open(CSV_FILE, mode='w', newline='', encoding='utf-8') as f:
+        if not os.path.exists(target_file):
+            with open(target_file, mode='w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(COLUMNS)
+        else:
+            # Ensure Bookmarked column exists in header if missing
+            try:
+                with open(target_file, mode='r', encoding='utf-8', errors='replace') as f:
+                    reader = csv.reader(f)
+                    header = next(reader, None)
+                if header and "Bookmarked" not in header:
+                    header.append("Bookmarked")
+                    rows = []
+                    with open(target_file, mode='r', encoding='utf-8', errors='replace') as f:
+                        reader = csv.reader(f)
+                        next(reader, None)
+                        for r in reader:
+                            while len(r) < len(header):
+                                r.append("0")
+                            rows.append(r)
+                    with open(target_file, mode='w', newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(header)
+                        writer.writerows(rows)
+            except Exception as e:
+                print(f"[Engine] Header check error on {target_file}: {e}")
 
 
 def fetch_google_autocomplete(query, gl="in", hl="en"):
@@ -66,16 +139,9 @@ def fetch_google_autocomplete(query, gl="in", hl="en"):
 
 
 def classify_intent(keyword):
-    """
-    Classifies search intent using pattern and token rules:
-    - Transactional: high buying/booking intent (cost, price, hire, contractor, buy, near me)
-    - Commercial Investigation: evaluation/comparison (best, top, vs, review, compare, material)
-    - Informational: educational/question (how, what, why, guide, tips, ideas, dimensions)
-    - Navigational: brand or login specific
-    """
+    """Classifies search intent using pattern and token rules."""
     kw = keyword.lower()
     
-    # Check Transactional
     transactional_triggers = [
         "cost", "price", "rate", "rates", "charges", "contractor", "service", 
         "services", "near me", "maker", "agency", "firm", "hire", "buy", 
@@ -84,7 +150,6 @@ def classify_intent(keyword):
     if any(re.search(r'\b' + re.escape(t) + r'\b', kw) for t in transactional_triggers):
         return "Transactional"
 
-    # Check Commercial Investigation
     commercial_triggers = [
         "best", "top", "review", "reviews", "vs", "versus", "compare", 
         "comparison", "difference", "which is", "pros and cons", "catalogue", "types of"
@@ -92,7 +157,6 @@ def classify_intent(keyword):
     if any(re.search(r'\b' + re.escape(c) + r'\b', kw) for c in commercial_triggers):
         return "Commercial"
 
-    # Check Informational
     informational_triggers = [
         "how", "what", "why", "where", "when", "can", "is", "guide", 
         "tips", "ideas", "meaning", "diy", "height", "standard size", "dimensions", "colour combination"
@@ -100,14 +164,11 @@ def classify_intent(keyword):
     if any(re.search(r'\b' + re.escape(i) + r'\b', kw) for i in informational_triggers):
         return "Informational"
 
-    # Fallback to Commercial intent for trade keywords
     return "Commercial"
 
 
 def detect_cluster(keyword, seed):
-    """
-    Assigns a topic cluster based on common interior and trade entities.
-    """
+    """Assigns a topic cluster based on common interior and trade entities."""
     kw = keyword.lower()
     if any(w in kw for w in ["price", "cost", "rate", "budget", "sq ft", "charges"]):
         return "Pricing & Estimates"
@@ -127,40 +188,84 @@ def detect_cluster(keyword, seed):
     return seed.title() if seed else "General"
 
 
-def load_all_keywords():
-    """Reads all rows from the local CSV storage."""
-    init_csv()
+def load_all_keywords(sheet_file=None):
+    """Reads all rows from the selected sheet."""
+    target_file = sheet_file or get_active_sheet()
+    init_csv(target_file)
     rows = []
     with csv_lock:
-        if os.path.exists(CSV_FILE):
-            with open(CSV_FILE, mode='r', encoding='utf-8', errors='replace') as f:
+        if os.path.exists(target_file):
+            with open(target_file, mode='r', encoding='utf-8', errors='replace') as f:
                 reader = csv.DictReader(f)
                 for r in reader:
+                    # ensure Bookmarked key exists
+                    if "Bookmarked" not in r:
+                        r["Bookmarked"] = "0"
                     rows.append(r)
     return rows
 
 
-def save_keywords_batch(new_rows):
-    """Appends multiple keyword rows safely to the CSV."""
+def save_keywords_batch(new_rows, sheet_file=None):
+    """Appends multiple keyword rows safely to the sheet."""
     if not new_rows:
         return 0
-    init_csv()
+    target_file = sheet_file or get_active_sheet()
+    init_csv(target_file)
     with csv_lock:
-        with open(CSV_FILE, mode='a', newline='', encoding='utf-8') as f:
+        with open(target_file, mode='a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             for r in new_rows:
                 writer.writerow(r)
     return len(new_rows)
 
 
-def update_row_in_csv(keyword_text, updates):
+def toggle_bookmark_in_csv(keyword_text, sheet_file=None):
+    """Toggles bookmark status (1 or 0) for a given keyword."""
+    target_file = sheet_file or get_active_sheet()
+    init_csv(target_file)
+    new_state = False
+    with csv_lock:
+        if not os.path.exists(target_file):
+            return False
+        with open(target_file, mode='r', encoding='utf-8', errors='replace') as f:
+            reader = csv.reader(f)
+            headers = next(reader, None)
+            if not headers:
+                return False
+            if "Bookmarked" not in headers:
+                headers.append("Bookmarked")
+            bm_idx = headers.index("Bookmarked")
+            rows = []
+            for row in reader:
+                while len(row) < len(headers):
+                    row.append("0")
+                if row and row[0].strip().lower() == keyword_text.strip().lower():
+                    cur = row[bm_idx].strip()
+                    if cur in ("1", "true", "True", "yes"):
+                        row[bm_idx] = "0"
+                        new_state = False
+                    else:
+                        row[bm_idx] = "1"
+                        new_state = True
+                rows.append(row)
+        
+        with open(target_file, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(rows)
+            
+    return new_state
+
+
+def update_row_in_csv(keyword_text, updates, sheet_file=None):
     """Updates fields like Priority, Validation Status, or Target Page for a keyword."""
-    init_csv()
+    target_file = sheet_file or get_active_sheet()
+    init_csv(target_file)
     updated = False
     with csv_lock:
-        if not os.path.exists(CSV_FILE):
+        if not os.path.exists(target_file):
             return False
-        with open(CSV_FILE, mode='r', encoding='utf-8', errors='replace') as f:
+        with open(target_file, mode='r', encoding='utf-8', errors='replace') as f:
             reader = csv.reader(f)
             headers = next(reader, None)
             if not headers:
@@ -168,18 +273,16 @@ def update_row_in_csv(keyword_text, updates):
             rows = []
             for row in reader:
                 if len(row) > 0 and row[0].strip().lower() == keyword_text.strip().lower():
-                    # Apply updates
                     for field, val in updates.items():
                         if field in headers:
                             idx = headers.index(field)
-                            # expand row if needed
                             while len(row) <= idx:
                                 row.append("")
                             row[idx] = val
                     updated = True
                 rows.append(row)
         
-        with open(CSV_FILE, mode='w', newline='', encoding='utf-8') as f:
+        with open(target_file, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(headers)
             writer.writerows(rows)
@@ -187,15 +290,16 @@ def update_row_in_csv(keyword_text, updates):
     return updated
 
 
-def delete_keywords_from_csv(keywords_to_delete):
+def delete_keywords_from_csv(keywords_to_delete, sheet_file=None):
     """Removes a list of keywords from CSV."""
-    init_csv()
+    target_file = sheet_file or get_active_sheet()
+    init_csv(target_file)
     del_set = {k.strip().lower() for k in keywords_to_delete}
     deleted_count = 0
     with csv_lock:
-        if not os.path.exists(CSV_FILE):
+        if not os.path.exists(target_file):
             return 0
-        with open(CSV_FILE, mode='r', encoding='utf-8', errors='replace') as f:
+        with open(target_file, mode='r', encoding='utf-8', errors='replace') as f:
             reader = csv.reader(f)
             headers = next(reader, None)
             if not headers:
@@ -207,7 +311,7 @@ def delete_keywords_from_csv(keywords_to_delete):
                 else:
                     remaining.append(row)
                     
-        with open(CSV_FILE, mode='w', newline='', encoding='utf-8') as f:
+        with open(target_file, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(headers)
             writer.writerows(remaining)
@@ -216,13 +320,9 @@ def delete_keywords_from_csv(keywords_to_delete):
 
 
 def generate_queries_for_mode(seed, mode="az_suffix", locations=None):
-    """
-    Builds the complete queue of Google Autocomplete queries based on the chosen mode.
-    """
+    """Builds the queue of Google Autocomplete queries based on the chosen mode."""
     clean_seed = seed.strip()
     queries = []
-
-    # If locations are provided, append location to seed queries
     loc_list = [l.strip() for l in locations if l.strip()] if locations else [""]
 
     for loc in loc_list:
@@ -262,7 +362,6 @@ def generate_queries_for_mode(seed, mode="az_suffix", locations=None):
                 queries.append(f"{base_seed} {comm}")
 
         elif mode == "deep_harvest":
-            # Complete suite: seed + A-Z + numbers + questions + prepositions + commercial
             queries.append(base_seed)
             for char in ALPHABET:
                 queries.append(f"{base_seed} {char}")
@@ -275,7 +374,6 @@ def generate_queries_for_mode(seed, mode="az_suffix", locations=None):
             for comm in COMMERCIAL_MODIFIERS:
                 queries.append(f"{base_seed} {comm}")
 
-    # Deduplicate queries while preserving order
     seen = set()
     deduped_queries = []
     for q in queries:
@@ -287,16 +385,13 @@ def generate_queries_for_mode(seed, mode="az_suffix", locations=None):
 
 
 def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None, 
-                    gl="in", hl="en", progress_callback=None, stop_check=None):
-    """
-    Executes an expansion run across queries with rate-limiting, intent detection, 
-    clustering, deduplication against existing database, and batch writing.
-    """
-    init_csv()
+                    gl="in", hl="en", progress_callback=None, stop_check=None, sheet_file=None):
+    """Executes an expansion run across queries with rate-limiting, deduplication, and writing."""
+    target_file = sheet_file or get_active_sheet()
+    init_csv(target_file)
     
-    # Load existing keywords to guarantee no duplicates
     existing_kws = set()
-    for row in load_all_keywords():
+    for row in load_all_keywords(target_file):
         if row.get("Keyword"):
             existing_kws.add(row["Keyword"].strip().lower())
 
@@ -332,16 +427,13 @@ def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None,
             clean_sug = sug.strip()
             sug_lower = clean_sug.lower()
 
-            # Check if already seen or in database
             if sug_lower in existing_kws:
                 continue
 
-            # Check negative keywords filter
             has_negative = any(neg in sug_lower for neg in negatives)
             if has_negative:
                 continue
 
-            # Determine properties
             intent = classify_intent(clean_sug)
             cluster = detect_cluster(clean_sug, seed)
             word_count = len(clean_sug.split())
@@ -358,24 +450,22 @@ def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None,
                 word_count,
                 "Unverified",
                 "Medium",
-                ""
+                "",
+                "0"  # Bookmarked = 0 by default
             ]
 
             batch_buffer.append(new_row)
             existing_kws.add(sug_lower)
             added_count += 1
 
-        # Periodic flush to CSV every 15 queries to keep disk in sync
         if len(batch_buffer) >= 20:
-            save_keywords_batch(batch_buffer)
+            save_keywords_batch(batch_buffer, target_file)
             batch_buffer.clear()
 
-        # Friendly pacing to avoid IP throttle
         time.sleep(0.12)
 
-    # Final flush
     if batch_buffer:
-        save_keywords_batch(batch_buffer)
+        save_keywords_batch(batch_buffer, target_file)
         batch_buffer.clear()
 
     return added_count
