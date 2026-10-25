@@ -6,10 +6,21 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
 
 ## Key Features & Highlights
 
-- **Streamlined Discovery Modes**:
-  - `Standard A-Z`: Complete alphabet soup expansion (`seed + a..z`).
-  - `Questions & Needs`: High-intent queries using interrogative modifiers (`how`, `why`, `what`, `best`, `near me`).
-  - `Deep Discovery`: Comprehensive recursive multi-pass crawl for finding low-competition long-tail keywords.
+- **Multi-Seed Comma-Separated Input (`word , word , word`)**:
+  - Enter multiple seed words separated by commas (e.g., `modular kitchen, wardrobe, tv unit`) in a single run.
+  - Each comma-separated word is expanded independently using real live Google Autocomplete suggestions, with automatic seed-stem verification so only genuine user searches containing each target word are collected.
+- **Streamlined Discovery Modes & Advanced `(algos)`**:
+  - `All variations (A to Z scan)`: Complete alphabet soup expansion (`seed + a..z`).
+  - `Questions (How, What, Why, Where)`: High-intent interrogative queries.
+  - `Buying & Pricing (Cost, Best, Near Me)`: Commercial & transactional buyer queries.
+  - `Deep Scan (Combines all methods)`: Multi-angle expansion.
+  - `Quick Search (Direct suggestions)`: Fast top suggestions.
+  - `Multi-Word Smart Scan (algos)`: High-yield prefix, suffix, and commercial/question stems across multiple comma-separated words.
+  - `Recursive Snowball Graph (algos)`: Two-pass Breadth-First Search (BFS) autocomplete graph crawler that feeds real Pass-1 Google suggestions back into Pass-2 to uncover deep long-tail keywords.
+  - `Wildcard & Gap Fill (algos)`: Uses Google Autocomplete `_` infix/wildcard templates and cursor-position (`cp`) mechanics to discover mid-phrase and prepositional completions.
+  - `Semantic & Buyer Matrix (algos)`: Probes comparison (`vs`, `or`, `alternative`), evaluation (`review`, `worth it`), and buyer-intent modifiers.
+  - `Answer & Question Miner (algos)`: AnswerThePublic-style 5W1H, modal, and problem/issue suffix mining.
+  - `Ultra Deep All-In-One (algos)`: Flagship algorithm combining A–Z suffix/prefix, numbers, wildcard gap fill, semantic matrix, deep questions, and recursive snowball expansion.
 - **Mobile-First & Desktop Ergonomics**:
   - Re-architected 3-tier top layout designed specifically for phones and tablets.
   - Dedicated full-width Sheet Switcher with one-tap `[+] New` sheet creation (no truncated file names).
@@ -59,8 +70,8 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
 ### 2. Manual Setup
 ```bash
 # 1. Clone repository
-git clone https://github.com/durgesharma/kwr.git
-cd kwr
+git clone https://github.com/durgesharma/seo-keyword-finder.git
+cd seo-keyword-finder
 
 # 2. Install dependencies
 pip install -r requirements.txt

@@ -44,17 +44,23 @@ HELP_TEXT = """
   python kwr.py harvest "<seed>"   Run keyword research directly in terminal
   python kwr.py sync-sheets        Sync local keywords into your Google Sheet
 
-[3] SEARCH MODES:
-  --mode az_suffix      All Variations: [seed] + a..z (Default)
-  --mode questions      Questions: how, what, why, which, can
-  --mode commercial     Buying Intent: cost, price, near me, best
-  --mode deep_harvest   Deep Scan: combines all angles & methods
-  --mode standard       Quick Search: top direct suggestions
+[3] SEARCH MODES & ADVANCED ALGORITHMS (Supports comma-separated seeds: "word1, word2, word3"):
+  --mode az_suffix            All Variations: [seed] + a..z (Default)
+  --mode questions            Questions: how, what, why, which, can
+  --mode commercial           Buying Intent: cost, price, near me, best
+  --mode deep_harvest         Deep Scan: combines all angles & methods
+  --mode standard             Quick Search: top direct suggestions
+  --mode algo_multiseed       Multi-Word Smart Scan (algos)
+  --mode algo_recursive       Recursive Snowball Graph (algos)
+  --mode algo_wildcard        Wildcard & Gap Fill (algos)
+  --mode algo_semantic        Semantic & Buyer Matrix (algos)
+  --mode algo_questions_deep  Answer & Question Miner (algos)
+  --mode algo_ultra           Ultra Deep All-In-One (algos)
 
   Examples:
-    python kwr.py harvest "marketing tools"
+    python kwr.py harvest "marketing tools, seo software, keyword planner" --mode algo_multiseed
     python kwr.py harvest "interior designer" --mode commercial --loc "Mumbai"
-    python kwr.py harvest "solar panel" --mode questions
+    python kwr.py harvest "solar panel" --mode algo_recursive
 
 [4] CONNECTING YOUR GOOGLE SHEET (Optional):
   To automatically sync discovered keywords to your personal Google Sheet:

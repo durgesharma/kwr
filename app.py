@@ -833,6 +833,12 @@ DASHBOARD_HTML = """
                     <option value="commercial">Buying & Pricing (Cost, Best, Near Me)</option>
                     <option value="deep_harvest">Deep Scan (Combines all methods)</option>
                     <option value="standard">Quick Search (Direct suggestions)</option>
+                    <option value="algo_multiseed">Multi-Word Smart Scan (algos)</option>
+                    <option value="algo_recursive">Recursive Snowball Graph (algos)</option>
+                    <option value="algo_wildcard">Wildcard & Gap Fill (algos)</option>
+                    <option value="algo_semantic">Semantic & Buyer Matrix (algos)</option>
+                    <option value="algo_questions_deep">Answer & Question Miner (algos)</option>
+                    <option value="algo_ultra">Ultra Deep All-In-One (algos)</option>
                 </select>
                 <button type="submit" class="btn btn-green" id="runBtn"><svg class="icon icon-left" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Harvest</button>
             </div>

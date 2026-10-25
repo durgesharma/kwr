@@ -4,6 +4,8 @@ import re
 import time
 import string
 import requests
+from requests.adapters import HTTPAdapter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Lock
 
@@ -23,6 +25,17 @@ QUESTION_MODIFIERS = [
     "which is better", "can we", "is it good", "does", "how much does"
 ]
 
+DEEP_QUESTION_PREFIXES = [
+    "how to", "how much", "how long", "how does", "what is", "what are",
+    "which", "why is", "why do", "where to", "where can i", "when to",
+    "who makes", "who does", "can i", "can you", "should i", "is it better to"
+]
+
+DEEP_QUESTION_SUFFIXES = [
+    "problems", "issues", "mistakes", "tips", "ideas", "guide",
+    "checklist", "meaning", "examples", "benefits", "alternatives", "faq"
+]
+
 PREPOSITION_MODIFIERS = [
     "for", "with", "without", "vs", "versus", "or", "near", "under", "in", "like"
 ]
@@ -32,8 +45,94 @@ COMMERCIAL_MODIFIERS = [
     "service", "near me", "best", "top", "quote", "estimate", "charges", "showroom", "maker", "installation"
 ]
 
+SEMANTIC_PREFIXES = [
+    "best", "top", "top 10", "cheap", "affordable", "modern", "custom",
+    "small", "luxury", "professional", "local", "buy", "hire"
+]
+
+SEMANTIC_SUFFIXES = [
+    "vs", "versus", "or", "alternative", "compared to", "review", "reviews",
+    "pros and cons", "worth it", "price", "cost", "rate", "budget", "charges",
+    "quote", "near me", "shop", "company", "service", "contractor", "dealer",
+    "online", "quality", "brands", "types", "design", "ideas"
+]
+
+WILDCARD_GAP_TEMPLATES = [
+    "_ {seed}",
+    "best _ {seed}",
+    "top _ {seed}",
+    "how to _ {seed}",
+    "{seed} for _",
+    "{seed} with _",
+    "{seed} without _",
+    "{seed} in _",
+    "{seed} near _",
+    "{seed} under _",
+    "{seed} vs _",
+    "{seed} like _"
+]
+
 NUMBER_MODIFIERS = [str(n) for n in range(0, 10)]
 ALPHABET = list(string.ascii_lowercase)
+HIGH_YIELD_LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "l", "m", "n", "o", "p", "r", "s", "t", "w"]
+
+# Persistent connection-pooled HTTP session for fast, low-latency autocomplete fetches
+_http_session = requests.Session()
+_adapter = HTTPAdapter(pool_connections=16, pool_maxsize=16, max_retries=1)
+_http_session.mount("https://", _adapter)
+_http_session.mount("http://", _adapter)
+_http_session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+})
+
+_autocomplete_cache = {}
+_cache_lock = Lock()
+
+
+def parse_seed_list(seed_input):
+    """
+    Splits comma-separated seed input (e.g. 'word1 , word2 , word3')
+    into clean, independent, deduplicated seed phrases.
+    """
+    if not seed_input:
+        return []
+    if isinstance(seed_input, (list, tuple)):
+        raw_parts = seed_input
+    else:
+        raw_parts = re.split(r',+', str(seed_input))
+    seeds = []
+    seen = set()
+    for part in raw_parts:
+        clean = " ".join(str(part).strip().split())
+        if clean and clean.lower() not in seen:
+            seen.add(clean.lower())
+            seeds.append(clean)
+    return seeds
+
+
+def suggestion_matches_seed(suggestion, parent_seed):
+    """
+    Verifies that a real Google Autocomplete suggestion genuinely contains
+    or matches the target seed word(s), filtering out unrelated autocomplete drift.
+    """
+    if not parent_seed:
+        return True
+    sug_low = suggestion.strip().lower()
+    seed_low = parent_seed.strip().lower()
+    if seed_low in sug_low:
+        return True
+
+    # Token-level stem check for multi-word or inflected matches (e.g. kitchen/kitchens, carpenter/carpentry)
+    stop_tokens = {"in", "on", "at", "to", "for", "of", "the", "a", "an", "and", "or", "with", "near", "me"}
+    seed_tokens = [t for t in re.findall(r'[a-z0-9]+', seed_low) if t not in stop_tokens]
+    if not seed_tokens:
+        seed_tokens = re.findall(r'[a-z0-9]+', seed_low)
+
+    for tok in seed_tokens:
+        stem = tok[:max(3, len(tok) - 2)] if len(tok) >= 5 else tok
+        if stem not in sug_low:
+            return False
+    return True
 
 
 def get_active_sheet():
@@ -87,6 +186,7 @@ def create_new_sheet(name):
 
 _verified_sheets = set()
 
+
 def init_csv(filename=None):
     """Initializes the CSV database with standard columns if not present."""
     target_file = filename or get_active_sheet()
@@ -123,21 +223,34 @@ def init_csv(filename=None):
                 print(f"[Engine] Header check error on {target_file}: {e}")
 
 
-def fetch_google_autocomplete(query, gl="in", hl="en"):
+def fetch_google_autocomplete(query, gl="in", hl="en", cursor_pos=None):
     """
-    Queries Google Autocomplete for keyword suggestions.
-    Uses public suggestqueries endpoint with regional parameters.
+    Queries Google Autocomplete for real keyword suggestions.
+    Uses persistent connection pooling and in-memory caching for high speed.
     """
+    cache_key = (query.strip().lower(), gl, hl, cursor_pos)
+    with _cache_lock:
+        if cache_key in _autocomplete_cache:
+            return list(_autocomplete_cache[cache_key])
+
     url = f"https://suggestqueries.google.com/complete/search?client=firefox&gl={gl}&hl={hl}&q={requests.utils.quote(query)}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-    }
+    if cursor_pos is not None:
+        url += f"&cp={int(cursor_pos)}"
+
     try:
-        response = requests.get(url, headers=headers, timeout=6)
+        response = _http_session.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
             if len(data) > 1 and isinstance(data[1], list):
-                return [sug.strip() for sug in data[1] if sug and isinstance(sug, str)]
+                results = [
+                    sug.strip() for sug in data[1]
+                    if sug and isinstance(sug, str) and not sug.strip().startswith("http")
+                ]
+                with _cache_lock:
+                    if len(_autocomplete_cache) > 5000:
+                        _autocomplete_cache.clear()
+                    _autocomplete_cache[cache_key] = results
+                return results
     except Exception as e:
         print(f"[Engine] Autocomplete query error for '{query}': {e}")
     return []
@@ -320,74 +433,186 @@ def delete_keywords_from_csv(keywords_to_delete, sheet_file=None):
     return deleted_count
 
 
-def generate_queries_for_mode(seed, mode="az_suffix", locations=None):
-    """Builds the queue of Google Autocomplete queries based on the chosen mode."""
-    clean_seed = seed.strip()
-    queries = []
+def _build_queries_for_single_seed(base_seed, mode):
+    """Generates query strings for a single seed phrase under the specified mode/algorithm."""
+    q_list = []
+
+    if mode == "standard":
+        q_list.append(base_seed)
+        q_list.append(f"{base_seed} ")
+
+    elif mode == "az_suffix":
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{base_seed} {char}")
+
+    elif mode == "az_prefix":
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{char} {base_seed}")
+
+    elif mode == "numbers":
+        q_list.append(base_seed)
+        for num in NUMBER_MODIFIERS:
+            q_list.append(f"{base_seed} {num}")
+
+    elif mode == "questions":
+        q_list.append(base_seed)
+        for q in QUESTION_MODIFIERS:
+            q_list.append(f"{q} {base_seed}")
+
+    elif mode == "prepositions":
+        q_list.append(base_seed)
+        for p in PREPOSITION_MODIFIERS:
+            q_list.append(f"{base_seed} {p}")
+
+    elif mode == "commercial":
+        q_list.append(base_seed)
+        for comm in COMMERCIAL_MODIFIERS:
+            q_list.append(f"{base_seed} {comm}")
+
+    elif mode == "deep_harvest":
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{base_seed} {char}")
+        for num in NUMBER_MODIFIERS:
+            q_list.append(f"{base_seed} {num}")
+        for q in QUESTION_MODIFIERS:
+            q_list.append(f"{q} {base_seed}")
+        for p in PREPOSITION_MODIFIERS:
+            q_list.append(f"{base_seed} {p}")
+        for comm in COMMERCIAL_MODIFIERS:
+            q_list.append(f"{base_seed} {comm}")
+
+    # ==================== ADVANCED DISCOVERY ALGORITHMS (algos) ====================
+    elif mode == "algo_multiseed":
+        # High-efficiency multi-word smart scan: suffix stems + prefix qualifiers + commercial/question stems
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{base_seed} {char}")
+        for pref in SEMANTIC_PREFIXES[:8]:
+            q_list.append(f"{pref} {base_seed}")
+        for suf in ["price", "cost", "near me", "best", "ideas", "design", "for", "with", "vs"]:
+            q_list.append(f"{base_seed} {suf}")
+        for q in ["how to", "what is", "which", "best"]:
+            q_list.append(f"{q} {base_seed}")
+
+    elif mode == "algo_recursive":
+        # Pass-1 stems for Recursive Snowball Graph (Pass-2 runs dynamically on discovered real roots)
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{base_seed} {char}")
+        for p in ["for", "with", "in", "near", "vs", "price", "cost", "best"]:
+            q_list.append(f"{base_seed} {p}")
+
+    elif mode == "algo_wildcard":
+        # Wildcard & Gap Fill algorithm: prefix, mid-phrase infix, and suffix gap completions
+        q_list.append(base_seed)
+        for tmpl in WILDCARD_GAP_TEMPLATES:
+            q_list.append(tmpl.format(seed=base_seed))
+        words = base_seed.split()
+        if len(words) >= 2:
+            for i in range(1, len(words)):
+                left = " ".join(words[:i])
+                right = " ".join(words[i:])
+                q_list.append(f"{left} _ {right}")
+                for ch in ["a", "b", "c", "f", "i", "l", "m", "p", "s", "w"]:
+                    q_list.append(f"{left} {ch} {right}")
+        for ch in HIGH_YIELD_LETTERS:
+            q_list.append(f"_ {base_seed} {ch}")
+            q_list.append(f"{base_seed} {ch}")
+
+    elif mode == "algo_semantic":
+        # Semantic & Buyer Matrix algorithm
+        q_list.append(base_seed)
+        for pref in SEMANTIC_PREFIXES:
+            q_list.append(f"{pref} {base_seed}")
+        for suf in SEMANTIC_SUFFIXES:
+            q_list.append(f"{base_seed} {suf}")
+        for ch in HIGH_YIELD_LETTERS:
+            q_list.append(f"{base_seed} {ch}")
+
+    elif mode == "algo_questions_deep":
+        # AnswerThePublic-style Deep Question & Forum Miner
+        q_list.append(base_seed)
+        for qp in DEEP_QUESTION_PREFIXES:
+            q_list.append(f"{qp} {base_seed}")
+        for qs in DEEP_QUESTION_SUFFIXES:
+            q_list.append(f"{base_seed} {qs}")
+        for p in PREPOSITION_MODIFIERS:
+            q_list.append(f"{base_seed} {p}")
+
+    elif mode == "algo_ultra":
+        # Ultra Deep All-In-One (A-Z Suffix + A-Z Prefix + Numbers + Wildcards + Semantic + Questions + Recursive)
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{base_seed} {char}")
+        for char in HIGH_YIELD_LETTERS:
+            q_list.append(f"{char} {base_seed}")
+        for num in NUMBER_MODIFIERS:
+            q_list.append(f"{base_seed} {num}")
+        for tmpl in WILDCARD_GAP_TEMPLATES:
+            q_list.append(tmpl.format(seed=base_seed))
+        words = base_seed.split()
+        if len(words) >= 2:
+            q_list.append(f"{words[0]} _ {' '.join(words[1:])}")
+        for pref in SEMANTIC_PREFIXES:
+            q_list.append(f"{pref} {base_seed}")
+        for suf in SEMANTIC_SUFFIXES:
+            q_list.append(f"{base_seed} {suf}")
+        for qp in DEEP_QUESTION_PREFIXES:
+            q_list.append(f"{qp} {base_seed}")
+        for qs in DEEP_QUESTION_SUFFIXES:
+            q_list.append(f"{base_seed} {qs}")
+
+    else:
+        # Fallback to az_suffix
+        q_list.append(base_seed)
+        for char in ALPHABET:
+            q_list.append(f"{base_seed} {char}")
+
+    return q_list
+
+
+def generate_query_tasks(seed_input, mode="az_suffix", locations=None):
+    """
+    Splits comma-separated seeds (e.g. 'word1 , word2 , word3') and builds
+    a deduplicated list of (query_string, parent_seed) tasks so each seed word
+    is researched independently.
+    """
+    seeds = parse_seed_list(seed_input)
+    if not seeds and str(seed_input).strip():
+        seeds = [str(seed_input).strip()]
+
     loc_list = [l.strip() for l in locations if l.strip()] if locations else [""]
-
-    for loc in loc_list:
-        base_seed = f"{clean_seed} {loc}".strip() if loc else clean_seed
-
-        if mode == "standard":
-            queries.append(base_seed)
-
-        elif mode == "az_suffix":
-            queries.append(base_seed)
-            for char in ALPHABET:
-                queries.append(f"{base_seed} {char}")
-
-        elif mode == "az_prefix":
-            queries.append(base_seed)
-            for char in ALPHABET:
-                queries.append(f"{char} {base_seed}")
-
-        elif mode == "numbers":
-            queries.append(base_seed)
-            for num in NUMBER_MODIFIERS:
-                queries.append(f"{base_seed} {num}")
-
-        elif mode == "questions":
-            queries.append(base_seed)
-            for q in QUESTION_MODIFIERS:
-                queries.append(f"{q} {base_seed}")
-
-        elif mode == "prepositions":
-            queries.append(base_seed)
-            for p in PREPOSITION_MODIFIERS:
-                queries.append(f"{base_seed} {p}")
-
-        elif mode == "commercial":
-            queries.append(base_seed)
-            for comm in COMMERCIAL_MODIFIERS:
-                queries.append(f"{base_seed} {comm}")
-
-        elif mode == "deep_harvest":
-            queries.append(base_seed)
-            for char in ALPHABET:
-                queries.append(f"{base_seed} {char}")
-            for num in NUMBER_MODIFIERS:
-                queries.append(f"{base_seed} {num}")
-            for q in QUESTION_MODIFIERS:
-                queries.append(f"{q} {base_seed}")
-            for p in PREPOSITION_MODIFIERS:
-                queries.append(f"{base_seed} {p}")
-            for comm in COMMERCIAL_MODIFIERS:
-                queries.append(f"{base_seed} {comm}")
-
+    tasks = []
     seen = set()
-    deduped_queries = []
-    for q in queries:
-        if q.lower() not in seen:
-            seen.add(q.lower())
-            deduped_queries.append(q)
 
-    return deduped_queries
+    for single_seed in seeds:
+        for loc in loc_list:
+            base_seed = f"{single_seed} {loc}".strip() if loc else single_seed
+            raw_queries = _build_queries_for_single_seed(base_seed, mode)
+            for q in raw_queries:
+                key = (q.lower(), single_seed.lower())
+                if key not in seen:
+                    seen.add(key)
+                    tasks.append((q, single_seed))
+
+    return tasks
+
+
+def generate_queries_for_mode(seed, mode="az_suffix", locations=None):
+    """Backwards-compatible helper returning flat list of query strings."""
+    return [q for q, _ in generate_query_tasks(seed, mode, locations)]
 
 
 def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None, 
                     gl="in", hl="en", progress_callback=None, stop_check=None, sheet_file=None):
-    """Executes an expansion run across queries with rate-limiting, deduplication, and writing."""
+    """
+    Executes a high-speed, concurrent keyword discovery run across one or multiple
+    comma-separated seed words, verifying real Google Autocomplete suggestions
+    and supporting recursive snowball expansion.
+    """
     target_file = sheet_file or get_active_sheet()
     init_csv(target_file)
     
@@ -396,8 +621,11 @@ def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None,
         if row.get("Keyword"):
             existing_kws.add(row["Keyword"].strip().lower())
 
-    queries = generate_queries_for_mode(seed, mode, locations)
-    total_queries = len(queries)
+    tasks = generate_query_tasks(seed, mode, locations)
+    is_recursive_mode = mode in ("algo_recursive", "algo_ultra")
+    total_queries = len(tasks)
+    if total_queries == 0:
+        return 0
     
     negatives = set(DEFAULT_NEGATIVES)
     if negative_words:
@@ -407,37 +635,31 @@ def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None,
 
     batch_buffer = []
     added_count = 0
+    completed_count = 0
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    loc_str = ", ".join(locations) if locations else "General"
+    discovered_by_seed = {}
+    state_lock = Lock()
 
-    for idx, query in enumerate(queries, 1):
-        if stop_check and stop_check():
-            break
-
-        if progress_callback:
-            progress_callback({
-                "current_index": idx,
-                "total_queries": total_queries,
-                "current_query": query,
-                "added_count": added_count,
-                "percent": int((idx / total_queries) * 100)
-            })
-
-        suggestions = fetch_google_autocomplete(query, gl=gl, hl=hl)
-
+    def process_suggestions(suggestions, parent_seed):
+        nonlocal added_count
+        new_for_this_query = []
         for sug in suggestions:
-            clean_sug = sug.strip()
+            clean_sug = " ".join(sug.strip().split())
+            if not clean_sug:
+                continue
             sug_lower = clean_sug.lower()
 
             if sug_lower in existing_kws:
                 continue
 
-            has_negative = any(neg in sug_lower for neg in negatives)
-            if has_negative:
+            if not suggestion_matches_seed(clean_sug, parent_seed):
+                continue
+
+            if any(neg in sug_lower for neg in negatives):
                 continue
 
             word_count = len(clean_sug.split())
-            loc_str = ", ".join(locations) if locations else "General"
-
             new_row = [
                 clean_sug,
                 now_str,
@@ -446,21 +668,95 @@ def execute_harvest(seed, mode="az_suffix", locations=None, negative_words=None,
                 "Unverified",
                 "Medium",
                 "",
-                "0"  # Bookmarked = 0 by default
+                "0"
             ]
 
             batch_buffer.append(new_row)
             existing_kws.add(sug_lower)
             added_count += 1
+            new_for_this_query.append(clean_sug)
 
-        if len(batch_buffer) >= 20:
-            save_keywords_batch(batch_buffer, target_file)
+        if parent_seed not in discovered_by_seed:
+            discovered_by_seed[parent_seed] = []
+        discovered_by_seed[parent_seed].extend(new_for_this_query)
+
+        if len(batch_buffer) >= 35:
+            save_keywords_batch(list(batch_buffer), target_file)
             batch_buffer.clear()
 
-        time.sleep(0.12)
+    def run_task_batch(task_list, stage_offset=0, grand_total=None):
+        nonlocal completed_count
+        effective_total = grand_total or len(task_list)
+        chunk_size = 18
 
-    if batch_buffer:
-        save_keywords_batch(batch_buffer, target_file)
-        batch_buffer.clear()
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            for start_idx in range(0, len(task_list), chunk_size):
+                if stop_check and stop_check():
+                    break
+                chunk = task_list[start_idx:start_idx + chunk_size]
+                future_to_task = {}
+                for q_str, p_seed in chunk:
+                    cp = q_str.index("_") if "_" in q_str else None
+                    clean_q = q_str.replace("_", " ").strip() if "_" in q_str else q_str
+                    fut = executor.submit(fetch_google_autocomplete, clean_q, gl, hl, cp)
+                    future_to_task[fut] = (q_str, p_seed)
+
+                for fut in as_completed(future_to_task):
+                    if stop_check and stop_check():
+                        break
+                    q_str, p_seed = future_to_task[fut]
+                    sugs = fut.result() or []
+                    with state_lock:
+                        completed_count += 1
+                        process_suggestions(sugs, p_seed)
+                        if progress_callback:
+                            pct = min(99, int((completed_count / max(1, effective_total)) * 100))
+                            progress_callback({
+                                "current_index": completed_count,
+                                "total_queries": effective_total,
+                                "current_query": f"[{p_seed}] {q_str}",
+                                "added_count": added_count,
+                                "percent": pct
+                            })
+                time.sleep(0.04)
+
+    # Pass 1: Execute primary query tasks
+    estimated_total = int(total_queries * 1.25) if is_recursive_mode else total_queries
+    run_task_batch(tasks, stage_offset=0, grand_total=estimated_total)
+
+    # Pass 2: Recursive Snowball Expansion on top real discovered Google stems
+    if is_recursive_mode and not (stop_check and stop_check()):
+        recursive_tasks = []
+        seen_rec = {q.lower() for q, _ in tasks}
+        for p_seed, disc_list in discovered_by_seed.items():
+            # Pick shortest high-signal discovered phrases (2 to 4 words) as snowball roots
+            candidates = sorted(
+                [d for d in disc_list if 2 <= len(d.split()) <= 4],
+                key=lambda x: len(x)
+            )[:6]
+            for root_kw in candidates:
+                for suffix in ["", "a", "c", "f", "m", "p", "s", "for", "in", "price", "near me"]:
+                    rq = f"{root_kw} {suffix}".strip()
+                    if rq.lower() not in seen_rec:
+                        seen_rec.add(rq.lower())
+                        recursive_tasks.append((rq, p_seed))
+
+        if recursive_tasks:
+            final_total = completed_count + len(recursive_tasks)
+            run_task_batch(recursive_tasks, stage_offset=completed_count, grand_total=final_total)
+
+    with state_lock:
+        if batch_buffer:
+            save_keywords_batch(list(batch_buffer), target_file)
+            batch_buffer.clear()
+
+    if progress_callback:
+        progress_callback({
+            "current_index": completed_count,
+            "total_queries": max(1, completed_count),
+            "current_query": "Completed",
+            "added_count": added_count,
+            "percent": 100
+        })
 
     return added_count
