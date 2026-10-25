@@ -1,16 +1,55 @@
 import csv
 import io
 import json
+import os
+import sys
 import threading
 from datetime import datetime
-from flask import Flask, render_template_string, request, jsonify, Response, redirect, url_for
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+try:
+    from flask import Flask, render_template_string, request, jsonify, Response, redirect, url_for
+except ImportError:
+    try:
+        import subprocess
+        print("[*] Required dependency 'flask' is missing. Auto-installing...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "flask"])
+        from flask import Flask, render_template_string, request, jsonify, Response, redirect, url_for
+        print("[OK] Flask installed successfully!")
+    except Exception as e:
+        print(f"\n[!] Fatal: Flask could not be imported or installed: {e}")
+        print("    Please run: pip install -r requirements.txt (or: pip install flask requests)\n")
+        sys.exit(1)
+
 from engine import (
     load_all_keywords, execute_harvest, update_row_in_csv, 
     delete_keywords_from_csv, init_csv, get_active_sheet, 
     set_active_sheet, list_available_sheets, create_new_sheet, 
     toggle_bookmark_in_csv, COLUMNS
 )
-from sheets_sync import get_sheets_status, sync_keywords_to_sheet, save_sheets_config
+
+try:
+    from sheets_sync import get_sheets_status, sync_keywords_to_sheet, save_sheets_config
+except ImportError:
+    def get_sheets_status():
+        return {
+            "configured": False,
+            "sheet_id_or_url": "",
+            "credentials_path": "",
+            "credentials_exist": False,
+            "client_email": "",
+            "worksheet_name": "Keywords"
+        }
+    def sync_keywords_to_sheet(*args, **kwargs):
+        return {
+            "success": False,
+            "message": "Google Sheets sync is unavailable. Run: pip install gspread google-auth"
+        }
+    def save_sheets_config(*args, **kwargs):
+        return {}
 
 app = Flask(__name__)
 init_csv()

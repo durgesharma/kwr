@@ -6,6 +6,10 @@ import sys
 import os
 import subprocess
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 # Ensure UTF-8 output handling on Windows consoles if supported
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -87,38 +91,59 @@ def cmd_setup():
     print_banner()
     print("[*] Running Automatic Setup & Health Check...\n")
     python_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    print(f"  Python Version: {python_ver} (Minimum required: 3.8)")
+    print(f"  Python Version: {python_ver} (Minimum required: 3.8)\n")
 
-    packages = {
+    core_packages = {
         "flask": "Flask (Web Dashboard)",
-        "requests": "Requests (Autocomplete HTTP Client)",
-        "gspread": "gspread (Google Sheets Sync)",
-        "google.oauth2": "google-auth (Google Cloud Authentication)"
+        "requests": "Requests (Autocomplete HTTP Client)"
+    }
+    optional_packages = {
+        "gspread": "gspread (Google Sheets Sync - Optional)",
+        "google.oauth2": "google-auth (Google Cloud Authentication - Optional)"
     }
 
-    missing = []
-    for mod, desc in packages.items():
+    missing_core = []
+    print("  [Core Packages - Required]:")
+    for mod, desc in core_packages.items():
         try:
             __import__(mod)
             print(f"  [OK] {desc:<45} : Installed")
         except ImportError:
             print(f"  [!]  {desc:<45} : MISSING")
-            missing.append(mod)
+            missing_core.append(mod)
 
-    if missing:
-        print("\n[*] Installing missing dependencies from requirements.txt...")
+    if missing_core:
+        print(f"\n[*] Installing missing core dependencies ({', '.join(missing_core)})...")
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-            print("[OK] Dependencies installed successfully!")
+            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_core)
+            print("[OK] Core dependencies installed successfully!\n")
         except Exception as e:
             print(f"[!] Pip install error: {e}")
-            print("    Please run manually: pip install -r requirements.txt")
+            print(f"    Please run manually: pip install {' '.join(missing_core)}")
+
+    print("\n  [Cloud Sync Packages - Optional]:")
+    missing_opt = []
+    for mod, desc in optional_packages.items():
+        try:
+            __import__(mod)
+            print(f"  [OK] {desc:<45} : Installed")
+        except ImportError:
+            print(f"  [-]  {desc:<45} : Not installed (Optional)")
+            missing_opt.append(mod)
+
+    if missing_opt:
+        print("\n[*] Attempting to install optional Google Sheets sync packages...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "gspread", "google-auth"])
+            print("[OK] Optional packages installed successfully!")
+        except Exception:
+            print("[-] Optional Google Sheets packages could not be installed (not required for local keyword harvesting).")
 
     try:
         from engine import init_csv, get_active_sheet
         active = get_active_sheet()
         init_csv(active)
-        print(f"  [OK] Local keyword database initialized     : {active}")
+        print(f"\n  [OK] Local keyword database initialized     : {active}")
     except Exception as e:
         print(f"  [!]  Database init note: {e}")
 
@@ -133,35 +158,64 @@ def cmd_check():
     print_banner()
     print("[*] Running System & Dependency Check...\n")
     python_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    print(f"  Python Version: {python_ver} (Minimum required: 3.8)")
+    print(f"  Python Version: {python_ver} (Minimum required: 3.8)\n")
 
-    packages = {
+    core_packages = {
         "flask": "Flask (Web Dashboard)",
-        "requests": "Requests (Autocomplete HTTP Client)",
-        "gspread": "gspread (Google Sheets Sync)",
-        "google.oauth2": "google-auth (Google Cloud Authentication)"
+        "requests": "Requests (Autocomplete HTTP Client)"
+    }
+    optional_packages = {
+        "gspread": "gspread (Google Sheets Sync - Optional)",
+        "google.oauth2": "google-auth (Google Cloud Authentication - Optional)"
     }
 
-    all_ok = True
-    for mod, desc in packages.items():
+    core_ok = True
+    print("  [Core Packages - Required]:")
+    for mod, desc in core_packages.items():
         try:
             __import__(mod)
             print(f"  [OK] {desc:<45} : Installed")
         except ImportError:
             print(f"  [!]  {desc:<45} : MISSING")
-            all_ok = False
+            core_ok = False
+
+    print("\n  [Cloud Sync Packages - Optional]:")
+    for mod, desc in optional_packages.items():
+        try:
+            __import__(mod)
+            print(f"  [OK] {desc:<45} : Installed")
+        except ImportError:
+            print(f"  [-]  {desc:<45} : Not installed (Optional)")
 
     print("\n" + ("=" * 70))
-    if all_ok:
-        print("[OK] All dependencies are installed! You are ready to run KWR.")
+    if core_ok:
+        print("[OK] All core dependencies are installed! You are ready to run KWR.")
         print("     Run 'python kwr.py start' to launch the dashboard.")
     else:
-        print("[!]  Some dependencies are missing. Install them with:")
-        print("     pip install -r requirements.txt")
+        print("[!]  Essential dependencies are missing. Install them with:")
+        print("     pip install -r requirements.txt (or: pip install flask requests)")
     print("=" * 70)
 
 def cmd_start():
     print_banner()
+    # Check and auto-install essential dependencies if missing
+    missing_core = []
+    for mod in ["flask", "requests"]:
+        try:
+            __import__(mod)
+        except ImportError:
+            missing_core.append(mod)
+
+    if missing_core:
+        print(f"[*] Missing essential dependency: {', '.join(missing_core)}. Auto-installing...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_core)
+            print("[OK] Essential packages installed successfully!\n")
+        except Exception as e:
+            print(f"[!] Could not auto-install: {e}")
+            print(f"    Please run: pip install {' '.join(missing_core)}\n")
+            return
+
     print("[*] Launching KWR Web Command Center...")
     print("[*] Address: http://127.0.0.1:5000")
     print("[*] Press Ctrl+C to stop the server.\n")
@@ -177,7 +231,7 @@ def cmd_start():
 def cmd_harvest(args):
     if not args:
         print("[!] Error: Missing seed keyword.")
-        print("    Usage: python kwr.py harvest \"modular kitchen\" [--mode az_suffix] [--loc \"Navi Mumbai\"]")
+        print("    Usage: python kwr.py harvest \"seo audit, technical seo\" [--mode algo_multiseed] [--loc \"New York\"]")
         return
 
     seed = args[0]

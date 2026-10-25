@@ -3,7 +3,13 @@
 CLI Bot interface for automated keyword discovery.
 Can run standalone or be scheduled.
 """
+import os
 import sys
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 from engine import execute_harvest, load_all_keywords
 
 DEFAULT_SEEDS = [

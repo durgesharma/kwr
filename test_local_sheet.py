@@ -1,8 +1,13 @@
 import csv
 import os
+import sys
 from datetime import datetime
 
-CSV_FILE = "keywords.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+CSV_FILE = os.path.join(BASE_DIR, "keywords.csv")
 
 # Define columns based on your schema
 COLUMNS = [

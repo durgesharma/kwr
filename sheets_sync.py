@@ -1,9 +1,15 @@
 import os
+import sys
 import json
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 from engine import load_all_keywords, COLUMNS
 
-CONFIG_FILE = "sheets_config.json"
-DEFAULT_CREDS_FILE = "credentials.json"
+CONFIG_FILE = os.path.join(BASE_DIR, "sheets_config.json")
+DEFAULT_CREDS_FILE = os.path.join(BASE_DIR, "credentials.json")
 
 def load_sheets_config():
     """Loads Google Sheets connection configuration if present."""

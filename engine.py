@@ -1,17 +1,45 @@
 import csv
 import os
+import sys
 import re
 import time
 import string
-import requests
-from requests.adapters import HTTPAdapter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Lock
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+try:
+    import requests
+    from requests.adapters import HTTPAdapter
+except ImportError:
+    try:
+        import subprocess
+        print("[*] Required dependency 'requests' is missing. Auto-installing...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
+        import requests
+        from requests.adapters import HTTPAdapter
+        print("[OK] Requests installed successfully!")
+    except Exception as e:
+        print(f"[!] Warning: Could not import or auto-install 'requests': {e}")
+        print("    Please run: pip install requests")
+        requests = None
+        HTTPAdapter = None
+
 DEFAULT_CSV = "keywords.csv"
-ACTIVE_SHEET_FILE = "active_sheet.txt"
+ACTIVE_SHEET_FILE = os.path.join(BASE_DIR, "active_sheet.txt")
 csv_lock = Lock()
+
+def _resolve_sheet_path(filename=None):
+    """Resolves sheet filename relative to BASE_DIR if relative."""
+    if not filename:
+        filename = get_active_sheet()
+    if os.path.isabs(filename):
+        return filename
+    return os.path.join(BASE_DIR, filename)
 
 COLUMNS = [
     "Keyword", "Collection Date", "Location", 
@@ -77,13 +105,17 @@ ALPHABET = list(string.ascii_lowercase)
 HIGH_YIELD_LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "l", "m", "n", "o", "p", "r", "s", "t", "w"]
 
 # Persistent connection-pooled HTTP session for fast, low-latency autocomplete fetches
-_http_session = requests.Session()
-_adapter = HTTPAdapter(pool_connections=16, pool_maxsize=16, max_retries=1)
-_http_session.mount("https://", _adapter)
-_http_session.mount("http://", _adapter)
-_http_session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-})
+if requests is not None:
+    _http_session = requests.Session()
+    if HTTPAdapter:
+        _adapter = HTTPAdapter(pool_connections=16, pool_maxsize=16, max_retries=1)
+        _http_session.mount("https://", _adapter)
+        _http_session.mount("http://", _adapter)
+    _http_session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    })
+else:
+    _http_session = None
 
 _autocomplete_cache = {}
 _cache_lock = Lock()
@@ -141,8 +173,8 @@ def get_active_sheet():
         try:
             with open(ACTIVE_SHEET_FILE, "r", encoding="utf-8") as f:
                 name = f.read().strip()
-                if name and os.path.exists(name):
-                    return name
+                if name and (os.path.exists(name) or os.path.exists(_resolve_sheet_path(name))):
+                    return os.path.basename(name)
         except:
             pass
     return DEFAULT_CSV
@@ -163,14 +195,15 @@ def list_available_sheets():
     """Lists all CSV keyword sheets in the project directory."""
     sheets = []
     try:
-        for f in os.listdir("."):
+        search_dir = BASE_DIR if os.path.exists(BASE_DIR) else "."
+        for f in os.listdir(search_dir):
             if f.endswith(".csv") and not f.startswith("."):
                 sheets.append(f)
     except:
         pass
-    if DEFAULT_CSV not in sheets and os.path.exists(DEFAULT_CSV):
+    if DEFAULT_CSV not in sheets and os.path.exists(_resolve_sheet_path(DEFAULT_CSV)):
         sheets.append(DEFAULT_CSV)
-    return sorted(list(set(sheets)))
+    return sorted(list(set(sheets))) or [DEFAULT_CSV]
 
 
 def create_new_sheet(name):
@@ -189,15 +222,16 @@ _verified_sheets = set()
 
 def init_csv(filename=None):
     """Initializes the CSV database with standard columns if not present."""
-    target_file = filename or get_active_sheet()
-    if target_file in _verified_sheets and os.path.exists(target_file):
+    sheet_name = filename or get_active_sheet()
+    target_file = _resolve_sheet_path(sheet_name)
+    if sheet_name in _verified_sheets and os.path.exists(target_file):
         return
     with csv_lock:
         if not os.path.exists(target_file):
             with open(target_file, mode='w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(COLUMNS)
-            _verified_sheets.add(target_file)
+            _verified_sheets.add(sheet_name)
         else:
             # Ensure Bookmarked column exists in header if missing
             try:
@@ -218,7 +252,7 @@ def init_csv(filename=None):
                         writer = csv.writer(f)
                         writer.writerow(header)
                         writer.writerows(rows)
-                _verified_sheets.add(target_file)
+                _verified_sheets.add(sheet_name)
             except Exception as e:
                 print(f"[Engine] Header check error on {target_file}: {e}")
 
@@ -304,7 +338,7 @@ def detect_cluster(keyword, seed):
 
 def load_all_keywords(sheet_file=None):
     """Reads all rows from the selected sheet."""
-    target_file = sheet_file or get_active_sheet()
+    target_file = _resolve_sheet_path(sheet_file or get_active_sheet())
     init_csv(target_file)
     rows = []
     with csv_lock:
@@ -323,7 +357,7 @@ def save_keywords_batch(new_rows, sheet_file=None):
     """Appends multiple keyword rows safely to the sheet."""
     if not new_rows:
         return 0
-    target_file = sheet_file or get_active_sheet()
+    target_file = _resolve_sheet_path(sheet_file or get_active_sheet())
     init_csv(target_file)
     with csv_lock:
         with open(target_file, mode='a', newline='', encoding='utf-8') as f:
@@ -335,7 +369,7 @@ def save_keywords_batch(new_rows, sheet_file=None):
 
 def toggle_bookmark_in_csv(keyword_text, sheet_file=None):
     """Toggles bookmark status (1 or 0) for a given keyword."""
-    target_file = sheet_file or get_active_sheet()
+    target_file = _resolve_sheet_path(sheet_file or get_active_sheet())
     init_csv(target_file)
     new_state = False
     with csv_lock:
@@ -373,7 +407,7 @@ def toggle_bookmark_in_csv(keyword_text, sheet_file=None):
 
 def update_row_in_csv(keyword_text, updates, sheet_file=None):
     """Updates fields like Priority, Validation Status, or Target Page for a keyword."""
-    target_file = sheet_file or get_active_sheet()
+    target_file = _resolve_sheet_path(sheet_file or get_active_sheet())
     init_csv(target_file)
     updated = False
     with csv_lock:
@@ -406,7 +440,7 @@ def update_row_in_csv(keyword_text, updates, sheet_file=None):
 
 def delete_keywords_from_csv(keywords_to_delete, sheet_file=None):
     """Removes a list of keywords from CSV."""
-    target_file = sheet_file or get_active_sheet()
+    target_file = _resolve_sheet_path(sheet_file or get_active_sheet())
     init_csv(target_file)
     del_set = {k.strip().lower() for k in keywords_to_delete}
     deleted_count = 0
