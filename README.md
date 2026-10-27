@@ -35,11 +35,21 @@ Automated Google Autocomplete keyword expansion, real-time discovery intelligenc
   - **Contextual Copy**: Copies only selected keywords when checkboxes are checked; copies all visible/active tab keywords when unselected. Supports clipboard fallback for local HTTP/Termux environments.
   - **Instant In-Place Deletion**: Single-row and bulk checkbox deletions remove elements directly from the DOM and update all counter cards in real time without slow full-page reloads.
   - **Live Selection Counter**: Dynamic status bar displays `<N> selected · <Total> rows` with automatic indeterminate/master checkbox synchronization.
-- **High-Performance Architecture & Zero-Lag DOM**:
-  - **In-Memory Row Cache**: Eliminates repeated DOM queries and layout thrashing during live keyword filtering.
-  - **DocumentFragment Re-ordering**: Date sorting batches DOM updates into a single reflow instead of hundreds of live append mutations.
-  - **CSS `content-visibility: auto`**: Off-screen rows skip layout and painting overhead for buttery smooth 60fps scrolling on mobile devices.
-  - **Sheet Header Cache**: In-memory caching in the engine eliminates redundant disk reads during batch updates.
+- **High-Performance Pagination for 1,000+ Keywords**:
+  - Handles massive keyword databases with instant sub-millisecond page rendering.
+  - Choose between `50`, `100`, `250`, `500`, or `All` rows per page with smooth numbered pagination (`« Prev`, `1`, `2`, ..., `Next »`).
+  - Completely eliminates browser layout thrashing and scrolling lag on both mobile phones and desktop browsers.
+- **Global Cross-Page Select All & Batch Operations**:
+  - Checking the master checkbox selects *all* filtered keywords across *all pages* in memory.
+  - **Contextual Copy**: Copies all selected keywords across all pages to your clipboard with one tap, or all visible filtered keywords if none are checked.
+  - **Bulk Deletion**: Deletes all selected keywords across all pages in a single optimized request and immediately updates counters.
+  - **Targeted CSV Export**: Exports either your globally selected keywords or your active filtered view.
+- **Multi-Dimensional Instant Filtering**:
+  - **Priority Filter**: Filter by `High`, `Medium`, or `Low` priority.
+  - **Validation Status Filter**: Filter by `Target`, `Unverified`, or `Discard`.
+  - **Word Length Filter**: Filter by `2+ Words`, `3+ Words`, `4+ Words`, `5+ Words`.
+  - **Date Ordering**: Sort by `Date: Newest`, `Date: Oldest`, or natural sheet order.
+  - **Real-Time Search**: Substring filter updates matching rows across all pages instantly.
 - **Clean, Distraction-Free Keyword Table**:
   - Zero clutter: Focuses on core data (`KEYWORD`, `DATE`, `BOOKMARK`, `ACTIONS`) without redundant columns.
   - **Square Row Delete Buttons**: Consistent `24x24px` theme-matched square `×` buttons (`.row-del-btn`) with subtle danger hover states.
@@ -141,10 +151,11 @@ Open **`http://127.0.0.1:5000`** in your browser.
    - Tap **Export CSV** to download the active view or whatever keywords you currently have checked.
 4. **Keyword Harvester**:
    - Enter a single seed or multiple comma-separated seeds (e.g., `cloud hosting , vps server , dedicated hosting`), choose a discovery mode or `(algos)` engine, optionally enter target cities or negative keywords, and click **Harvest**.
-5. **Selection & Bulk Actions**:
-   - Check individual rows or use the header checkbox to select all visible rows.
+5. **Selection, Pagination & Bulk Actions**:
+   - Navigate large keyword datasets smoothly with the bottom pagination bar and page size dropdown (`50`, `100`, `250`, `500`, `All`).
+   - Use the header checkbox to globally select all filtered keywords across all pages at once.
    - Click the **Copy** button to copy selected keywords (or all visible keywords if none are selected) to your clipboard for Google Keyword Planner.
-   - Click the **Delete** button to remove selected rows immediately without page reloads.
+   - Click the **Delete** button to remove all selected rows across all pages immediately without page reloads.
 
 ---
 

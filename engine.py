@@ -155,16 +155,27 @@ def suggestion_matches_seed(suggestion, parent_seed):
         return True
 
     # Token-level stem check for multi-word or inflected matches (e.g. kitchen/kitchens, carpenter/carpentry)
-    stop_tokens = {"in", "on", "at", "to", "for", "of", "the", "a", "an", "and", "or", "with", "near", "me"}
+    stop_tokens = {"in", "on", "at", "to", "for", "of", "the", "a", "an", "and", "or", "with", "near", "me", "by", "vs", "versus"}
     seed_tokens = [t for t in re.findall(r'[a-z0-9]+', seed_low) if t not in stop_tokens]
     if not seed_tokens:
         seed_tokens = re.findall(r'[a-z0-9]+', seed_low)
 
+    if not seed_tokens:
+        return True
+
+    matched_tokens = 0
     for tok in seed_tokens:
         stem = tok[:max(3, len(tok) - 2)] if len(tok) >= 5 else tok
-        if stem not in sug_low:
-            return False
-    return True
+        if stem in sug_low:
+            matched_tokens += 1
+
+    # For 1-2 word seeds: require all meaningful tokens to match
+    # For 3+ word seeds: matching at least 60% of tokens (min 2) is a genuine match
+    if len(seed_tokens) <= 2:
+        return matched_tokens == len(seed_tokens)
+    else:
+        threshold = max(2, int(len(seed_tokens) * 0.6))
+        return matched_tokens >= threshold
 
 
 def get_active_sheet():
@@ -631,6 +642,24 @@ def generate_query_tasks(seed_input, mode="az_suffix", locations=None):
                 if key not in seen:
                     seen.add(key)
                     tasks.append((q, single_seed))
+
+    # Cross-seed pairwise combinations for multi-seed runs
+    if len(seeds) >= 2 and mode in ("algo_multiseed", "algo_ultra", "algo_semantic", "deep_harvest"):
+        import itertools
+        for s1, s2 in itertools.combinations(seeds, 2):
+            cross_queries = [
+                f"{s1} vs {s2}",
+                f"{s1} and {s2}",
+                f"{s1} or {s2}",
+                f"{s1} with {s2}",
+                f"{s1} {s2}"
+            ]
+            for cq in cross_queries:
+                for target_seed in (s1, s2):
+                    key = (cq.lower(), target_seed.lower())
+                    if key not in seen:
+                        seen.add(key)
+                        tasks.append((cq, target_seed))
 
     return tasks
 
